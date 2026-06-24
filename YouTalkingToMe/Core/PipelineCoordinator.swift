@@ -5,14 +5,21 @@ final class PipelineCoordinator: ObservableObject {
 
     @Published var overlayState: OverlayState = .hidden
 
-    private let audioCapture = AudioCapture()
-    private let textInjector = TextInjector()
-    private let inferenceClient: InferenceClient
+    private let audioCapture: any AudioCapturing
+    private let textInjector: any TextInjecting
+    private let inferenceClient: any InferenceServing
     private let settingsStore: SettingsStore
 
-    init(inferenceClient: InferenceClient, settingsStore: SettingsStore) {
+    init(
+        inferenceClient: any InferenceServing,
+        settingsStore: SettingsStore,
+        audioCapture: any AudioCapturing = AudioCapture(),
+        textInjector: any TextInjecting = TextInjector()
+    ) {
         self.inferenceClient = inferenceClient
         self.settingsStore = settingsStore
+        self.audioCapture = audioCapture
+        self.textInjector = textInjector
     }
 
     func startDictation() {

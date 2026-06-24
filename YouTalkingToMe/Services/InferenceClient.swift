@@ -42,9 +42,7 @@ final class InferenceClient {
         guard process == nil else { return }
 
         let inferenceDir = findInferenceDirectory()
-        let venvPython = inferenceDir.appendingPathComponent(".venv/bin/python")
-        let systemPython = URL(fileURLWithPath: "/usr/bin/python3")
-        let python = FileManager.default.fileExists(atPath: venvPython.path) ? venvPython : systemPython
+        let python = InferenceDirectoryResolver.pythonExecutable(in: inferenceDir)
         let server = inferenceDir.appendingPathComponent("server.py")
 
         let proc = Process()
@@ -190,8 +188,7 @@ final class InferenceClient {
     }
 
     private func processLine(_ line: String) {
-        guard !line.isEmpty, let lineData = line.data(using: .utf8) else { return }
-        guard let message = try? JSONDecoder().decode(InferenceMessage.self, from: lineData) else { return }
+        guard let message = InferenceMessage.decodeLine(line) else { return }
 
         if message.type == "progress" {
             if let handler = loadHandler {
@@ -234,22 +231,11 @@ final class InferenceClient {
     }
 
     private func findInferenceDirectory() -> URL {
-        let candidates: [URL] = [
-            Bundle.main.resourceURL?.appendingPathComponent("inference"),
-            URL(fileURLWithPath: ProcessInfo.processInfo.environment["SRCROOT"] ?? "")
-                .appendingPathComponent("inference"),
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("inference"),
-            URL(fileURLWithPath: "/Users/mathias.desloges/DEV/talk-to-me/inference"),
-        ].compactMap { $0 }
-
-        for url in candidates {
-            let serverPath = url.appendingPathComponent("server.py").path
-            if FileManager.default.fileExists(atPath: serverPath) {
-                return url
-            }
-        }
-
-        return URL(fileURLWithPath: "/Users/mathias.desloges/DEV/talk-to-me/inference")
+        InferenceDirectoryResolver.resolve(
+            bundleResourceURL: Bundle.main.resourceURL,
+            srcRoot: ProcessInfo.processInfo.environment["SRCROOT"],
+            currentDirectory: FileManager.default.currentDirectoryPath,
+            fallbackPath: FileManager.default.currentDirectoryPath + "/inference"
+        )
     }
 }

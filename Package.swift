@@ -17,5 +17,10 @@ let package = Package(
                 .linkedFramework("Combine"),
             ]
         ),
+        .testTarget(
+            name: "YouTalkingToMeTests",
+            dependencies: ["YouTalkingToMe"],
+            path: "YouTalkingToMeTests"
+        ),
     ]
 )

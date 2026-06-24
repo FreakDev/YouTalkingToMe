@@ -33,5 +33,32 @@ open dist/YouTalkingToMe.app
 ## Requirements
 
 - macOS 14+, Apple Silicon (M1+)
-- Python 3.11+
-- Xcode 15+
+- **Run the built app:** no dev tools required
+- **Build from source:** Xcode Command Line Tools (`xcode-select --install`) + Python 3.11+ for `./scripts/bundle-python.sh`
+- **Xcode.app:** optional for building; **required** to run Swift unit tests (`swift test`)
+
+## Tests
+
+```bash
+# Fast suite: Python unit + IPC + Swift unit tests (< 30s)
+chmod +x scripts/test.sh
+./scripts/test.sh
+
+# Include ML smoke tests (requires models cached in ~/Library/Application Support/YouTalkingToMe/models)
+./scripts/test.sh --smoke
+
+# Include bundle checks (run ./scripts/build-app.sh first)
+./scripts/test.sh --bundle
+
+# Everything
+./scripts/test.sh --all
+```
+
+Dev Python test deps (installed automatically by `test.sh` if missing):
+
+```bash
+inference/.venv/bin/pip install -r inference/requirements-dev.txt
+```
+
+Bundle size budget is tracked in `inference/tests/bundle_budget.json` (baseline ~1.1 Go). After weight refactors, lower `max_bytes` and move packages from `target_removals` to `forbidden_packages`.
+

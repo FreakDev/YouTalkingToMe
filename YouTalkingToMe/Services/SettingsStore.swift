@@ -3,7 +3,7 @@ import Foundation
 final class SettingsStore: ObservableObject {
     @Published var settings: AppSettings
 
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
     private enum Keys {
         static let tier = "tier"
         static let hotkeyModifiers = "hotkeyModifiers"
@@ -11,7 +11,8 @@ final class SettingsStore: ObservableObject {
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
     }
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         let tierRaw = defaults.string(forKey: Keys.tier) ?? ModelTier.fast.rawValue
         let tier = ModelTier(rawValue: tierRaw) ?? .fast
         let modifiers = defaults.object(forKey: Keys.hotkeyModifiers) as? UInt ?? AppSettings.default.hotkeyModifiers

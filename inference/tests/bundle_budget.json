@@ -1,0 +1,6 @@
+{
+  "max_bytes": 1150000000,
+  "forbidden_packages": [],
+  "target_removals": ["torch"],
+  "enforce_no_cache_junk": false
+}
