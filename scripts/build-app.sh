@@ -27,7 +27,24 @@ else
 fi
 
 echo "Copying inference helper..."
-ditto "${ROOT_DIR}/inference" "${RESOURCES}/inference"
+mkdir -p "${RESOURCES}/inference"
+rsync -a \
+  --exclude='/.pytest_cache/' \
+  --exclude='/tests/' \
+  --exclude='__pycache__/' \
+  --exclude='*.pyc' \
+  --exclude='*.pyo' \
+  --exclude='.venv/lib/python*/site-packages/torch/' \
+  --exclude='.venv/lib/python*/site-packages/torchgen/' \
+  --exclude='.venv/lib/python*/site-packages/sympy/' \
+  --exclude='.venv/lib/python*/site-packages/networkx/' \
+  "${ROOT_DIR}/inference/" "${RESOURCES}/inference/"
+
+echo "Pruning bundled Python venv..."
+chmod +x "${ROOT_DIR}/scripts/prune-inference-venv.sh"
+"${ROOT_DIR}/scripts/prune-inference-venv.sh" "${RESOURCES}/inference/.venv"
+find "${RESOURCES}/inference" -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+find "${RESOURCES}/inference" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete 2>/dev/null || true
 
 chmod +x "${MACOS}/${APP_NAME}"
 

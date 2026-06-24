@@ -60,5 +60,5 @@ Dev Python test deps (installed automatically by `test.sh` if missing):
 inference/.venv/bin/pip install -r inference/requirements-dev.txt
 ```
 
-Bundle size budget is tracked in `inference/tests/bundle_budget.json` (baseline ~1.1 Go). After weight refactors, lower `max_bytes` and move packages from `target_removals` to `forbidden_packages`.
+Bundle size budget is tracked in `inference/tests/bundle_budget.json` (baseline ~490 Mo). Do not set `transformers_models_keep` — AutoTokenizer scans all model modules and pruning breaks polish.
 

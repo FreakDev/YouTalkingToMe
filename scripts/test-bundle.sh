@@ -35,10 +35,11 @@ fi
 pass "Bundle size within budget (${ACTUAL_BYTES} bytes)"
 
 # Forbidden packages
-FORBIDDEN="$(python3 -c "import json; print(' '.join(json.load(open('${BUDGET_FILE}'))['forbidden_packages']))")"
+FORBIDDEN="$(python3 -c "import json; print(' '.join(json.load(open('${BUDGET_FILE}')).get('forbidden_packages', [])))")"
+TARGET_REMOVALS="$(python3 -c "import json; print(' '.join(json.load(open('${BUDGET_FILE}')).get('target_removals', [])))")"
 SITE_PACKAGES="${APP_DIR}/Contents/Resources/inference/.venv/lib"
-for pkg in ${FORBIDDEN}; do
-  if find "${SITE_PACKAGES}" -type d -name "${pkg}" 2>/dev/null | grep -q .; then
+for pkg in ${FORBIDDEN} ${TARGET_REMOVALS}; do
+  if find "${SITE_PACKAGES}" -path "*/site-packages/${pkg}" -type d 2>/dev/null | grep -q .; then
     fail "Forbidden package present in bundle: ${pkg}"
   fi
 done
@@ -57,6 +58,7 @@ pass "Python cache junk policy"
 # Python runnable in bundle
 BUNDLE_PYTHON="${APP_DIR}/Contents/Resources/inference/.venv/bin/python"
 [[ -x "${BUNDLE_PYTHON}" ]] || fail "Bundled Python not executable"
+export PYTHONDONTWRITEBYTECODE=1
 "${BUNDLE_PYTHON}" -c "import mlx; import mlx_whisper; import mlx_lm" || fail "Bundled Python imports failed"
 pass "Bundled Python imports"
 
@@ -66,6 +68,31 @@ PING_RESULT="$(
 )"
 echo "${PING_RESULT}" | grep -q '"ok": true' || fail "Server ping from bundle failed: ${PING_RESULT}"
 pass "Server ping from bundle"
+
+# Polish model load (requires cached models — catches broken transformers pruning)
+MODELS_CACHE="${HOME}/Library/Application Support/YouTalkingToMe/models"
+if [[ -d "${MODELS_CACHE}" ]] && [[ -n "$(ls -A "${MODELS_CACHE}" 2>/dev/null)" ]]; then
+  TRANSFORMERS_KEEP="$(python3 -c "import json; keep=json.load(open('${BUDGET_FILE}')).get('transformers_models_keep', []); print('set' if keep else '')")"
+  if [[ -n "${TRANSFORMERS_KEEP}" ]]; then
+    fail "transformers_models_keep is configured — this breaks AutoTokenizer in the bundle"
+  fi
+  POLISH_LOAD_RESULT="$(
+    "${BUNDLE_PYTHON}" -c "
+from pathlib import Path
+from huggingface_hub import snapshot_download
+from mlx_lm import load
+
+cache = Path.home() / 'Library/Application Support/YouTalkingToMe/models'
+path = snapshot_download('mlx-community/Qwen2.5-1.5B-Instruct-4bit', cache_dir=str(cache))
+model, tokenizer = load(path)
+assert model is not None and tokenizer is not None
+print('ok')
+" 2>&1
+  )" || fail "Bundled polish model load failed: ${POLISH_LOAD_RESULT}"
+  pass "Bundled polish model load"
+else
+  echo "SKIP: Bundled polish model load (models not cached locally)"
+fi
 
 # Code signature
 codesign -dv "${APP_DIR}" >/dev/null 2>&1 || fail "codesign verification failed"

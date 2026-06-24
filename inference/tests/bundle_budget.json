@@ -1,6 +1,24 @@
 {
-  "max_bytes": 1150000000,
-  "forbidden_packages": [],
-  "target_removals": ["torch"],
-  "enforce_no_cache_junk": false
+  "max_bytes": 520000000,
+  "forbidden_packages": [
+    "torch",
+    "sympy",
+    "networkx",
+    "torchgen",
+    "pytest",
+    "_pytest",
+    "pip"
+  ],
+  "target_removals": [],
+  "optional_removals": [
+    "typer",
+    "rich",
+    "pygments",
+    "shellingham",
+    "markdown_it",
+    "build",
+    "hf_xet"
+  ],
+  "transformers_models_keep": [],
+  "enforce_no_cache_junk": true
 }

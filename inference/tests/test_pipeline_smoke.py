@@ -3,40 +3,40 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
-import numpy as np
 import pytest
 
-from conftest import write_wav
+from conftest import models_cached
 from server import InferenceServer, download_model
 
-pytestmark = pytest.mark.smoke
 
+@pytest.mark.skipif(not models_cached(), reason="ML models not cached locally")
+def test_transcribe_and_polish_returns_polished_text(monkeypatch, tmp_path):
+    """Regression: bundled transformers pruning must not leave polish returning empty text."""
+    import server as server_module
 
-def _models_cached() -> bool:
-    cache = Path.home() / "Library" / "Application Support" / "YouTalkingToMe" / "models"
-    return cache.exists() and any(cache.iterdir())
+    outputs: list[dict] = []
 
+    def capture(payload: dict) -> None:
+        outputs.append(payload)
 
-@pytest.mark.skipif(not _models_cached(), reason="ML models not cached locally")
-def test_pipeline_smoke(emit_capture, tmp_path):
-    cache = str(Path.home() / "Library" / "Application Support" / "YouTalkingToMe" / "models")
-    stt_path = download_model("mlx-community/whisper-small-mlx", cache)
+    monkeypatch.setattr(server_module, "emit", capture)
+
+    cache = str(Path.home() / "Library/Application Support/YouTalkingToMe/models")
     polish_path = download_model("mlx-community/Qwen2.5-1.5B-Instruct-4bit", cache)
 
-    t = np.linspace(0, 1.0, int(16000 * 1.0), endpoint=False)
-    tone = (np.sin(2 * np.pi * 220 * t) * 12000).astype(np.int16)
-    wav_path = write_wav(tmp_path / "pipeline.wav", sample_rate=16000, frames=tone)
-
-    server = InferenceServer()
-    server.stt_model_path = stt_path
+    server = server_module.InferenceServer()
     server.polish_engine.load(polish_path)
 
-    server.handle({"command": "transcribe_and_polish", "audio_path": str(wav_path)})
+    raw_transcript = "euh bonjour le mardi euh"
+    with patch("server.transcribe", return_value=raw_transcript):
+        server.handle({"command": "transcribe_and_polish", "audio_path": "/tmp/unused.wav"})
 
-    result_messages = [msg for msg in emit_capture if msg.get("type") == "result"]
+    result_messages = [msg for msg in outputs if msg.get("type") == "result"]
     assert len(result_messages) == 1
     payload = result_messages[0]
     assert payload["command"] == "transcribe_and_polish"
-    assert isinstance(payload.get("raw_text"), str)
+    assert payload["raw_text"] == raw_transcript
     assert isinstance(payload.get("text"), str)
+    assert payload["text"].strip(), "Polish must return non-empty text for non-empty transcript"

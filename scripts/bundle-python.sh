@@ -12,4 +12,7 @@ fi
 "${VENV_DIR}/bin/pip" install --upgrade pip
 "${VENV_DIR}/bin/pip" install -r "${REQUIREMENTS}"
 
+# mlx-whisper declares torch but the MLX code path never imports it.
+"${VENV_DIR}/bin/pip" uninstall -y torch sympy networkx 2>/dev/null || true
+
 echo "Python inference environment ready at ${VENV_DIR}"
