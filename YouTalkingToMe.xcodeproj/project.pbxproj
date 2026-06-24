@@ -1,0 +1,347 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B10000010000000000000001 /* YouTalkingToMeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000001 /* YouTalkingToMeApp.swift */; };
+		B10000010000000000000002 /* MenubarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000002 /* MenubarController.swift */; };
+		B10000010000000000000003 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000003 /* HotkeyManager.swift */; };
+		B10000010000000000000004 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000004 /* AudioCapture.swift */; };
+		B10000010000000000000005 /* TextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000005 /* TextInjector.swift */; };
+		B10000010000000000000006 /* PermissionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000006 /* PermissionsManager.swift */; };
+		B10000010000000000000007 /* PipelineCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000007 /* PipelineCoordinator.swift */; };
+		B10000010000000000000008 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000008 /* OverlayPanel.swift */; };
+		B10000010000000000000009 /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000009 /* OverlayView.swift */; };
+		B10000010000000000000010 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000010 /* SettingsView.swift */; };
+		B10000010000000000000011 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000011 /* OnboardingView.swift */; };
+		B10000010000000000000012 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000012 /* ModelManager.swift */; };
+		B10000010000000000000013 /* InferenceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000013 /* InferenceClient.swift */; };
+		B10000010000000000000014 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000014 /* SettingsStore.swift */; };
+		B10000010000000000000015 /* AppModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000015 /* AppModels.swift */; };
+		B10000010000000000000016 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000018 /* AppLogger.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B20000010000000000000001 /* YouTalkingToMeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTalkingToMeApp.swift; sourceTree = "<group>"; };
+		B20000010000000000000002 /* MenubarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenubarController.swift; sourceTree = "<group>"; };
+		B20000010000000000000003 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
+		B20000010000000000000004 /* AudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCapture.swift; sourceTree = "<group>"; };
+		B20000010000000000000005 /* TextInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInjector.swift; sourceTree = "<group>"; };
+		B20000010000000000000006 /* PermissionsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsManager.swift; sourceTree = "<group>"; };
+		B20000010000000000000007 /* PipelineCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineCoordinator.swift; sourceTree = "<group>"; };
+		B20000010000000000000008 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
+		B20000010000000000000009 /* OverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayView.swift; sourceTree = "<group>"; };
+		B20000010000000000000010 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B20000010000000000000011 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B20000010000000000000012 /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
+		B20000010000000000000013 /* InferenceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceClient.swift; sourceTree = "<group>"; };
+		B20000010000000000000014 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		B20000010000000000000015 /* AppModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModels.swift; sourceTree = "<group>"; };
+		B20000010000000000000016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B20000010000000000000017 /* YouTalkingToMe.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YouTalkingToMe.entitlements; sourceTree = "<group>"; };
+		B20000010000000000000018 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		B30000010000000000000001 /* YouTalkingToMe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YouTalkingToMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B40000010000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B50000010000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				B50000010000000000000002 /* YouTalkingToMe */,
+				B50000010000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B50000010000000000000002 /* YouTalkingToMe */ = {
+			isa = PBXGroup;
+			children = (
+				B50000010000000000000004 /* App */,
+				B50000010000000000000005 /* Core */,
+				B50000010000000000000006 /* UI */,
+				B50000010000000000000007 /* Services */,
+				B50000010000000000000008 /* Models */,
+				B50000010000000000000009 /* Resources */,
+			);
+			path = YouTalkingToMe;
+			sourceTree = "<group>";
+		};
+		B50000010000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B30000010000000000000001 /* YouTalkingToMe.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B50000010000000000000004 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000001 /* YouTalkingToMeApp.swift */,
+				B20000010000000000000002 /* MenubarController.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		B50000010000000000000005 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000003 /* HotkeyManager.swift */,
+				B20000010000000000000004 /* AudioCapture.swift */,
+				B20000010000000000000005 /* TextInjector.swift */,
+				B20000010000000000000006 /* PermissionsManager.swift */,
+				B20000010000000000000007 /* PipelineCoordinator.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		B50000010000000000000006 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000008 /* OverlayPanel.swift */,
+				B20000010000000000000009 /* OverlayView.swift */,
+				B20000010000000000000010 /* SettingsView.swift */,
+				B20000010000000000000011 /* OnboardingView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		B50000010000000000000007 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000012 /* ModelManager.swift */,
+				B20000010000000000000013 /* InferenceClient.swift */,
+				B20000010000000000000014 /* SettingsStore.swift */,
+				B20000010000000000000018 /* AppLogger.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		B50000010000000000000008 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000015 /* AppModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		B50000010000000000000009 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000016 /* Info.plist */,
+				B20000010000000000000017 /* YouTalkingToMe.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B60000010000000000000001 /* YouTalkingToMe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B70000010000000000000003 /* Build configuration list for PBXNativeTarget "YouTalkingToMe" */;
+			buildPhases = (
+				B80000010000000000000002 /* Copy Inference Helper */,
+				B80000010000000000000001 /* Sources */,
+				B40000010000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = YouTalkingToMe;
+			productName = YouTalkingToMe;
+			productReference = B30000010000000000000001 /* YouTalkingToMe.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B90000010000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = B70000010000000000000001 /* Build configuration list for PBXProject "YouTalkingToMe" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B50000010000000000000001;
+			productRefGroup = B50000010000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B60000010000000000000001 /* YouTalkingToMe */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B80000010000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000010000000000000001 /* YouTalkingToMeApp.swift in Sources */,
+				B10000010000000000000002 /* MenubarController.swift in Sources */,
+				B10000010000000000000003 /* HotkeyManager.swift in Sources */,
+				B10000010000000000000004 /* AudioCapture.swift in Sources */,
+				B10000010000000000000005 /* TextInjector.swift in Sources */,
+				B10000010000000000000006 /* PermissionsManager.swift in Sources */,
+				B10000010000000000000007 /* PipelineCoordinator.swift in Sources */,
+				B10000010000000000000008 /* OverlayPanel.swift in Sources */,
+				B10000010000000000000009 /* OverlayView.swift in Sources */,
+				B10000010000000000000010 /* SettingsView.swift in Sources */,
+				B10000010000000000000011 /* OnboardingView.swift in Sources */,
+				B10000010000000000000012 /* ModelManager.swift in Sources */,
+				B10000010000000000000013 /* InferenceClient.swift in Sources */,
+				B10000010000000000000014 /* SettingsStore.swift in Sources */,
+				B10000010000000000000015 /* AppModels.swift in Sources */,
+				B10000010000000000000016 /* AppLogger.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		B80000010000000000000002 /* Copy Inference Helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/inference",
+			);
+			name = "Copy Inference Helper";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/inference/server.py",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "ditto \"${SRCROOT}/inference\" \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/inference\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BA0000010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		BA0000010000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		BA0000010000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = YouTalkingToMe/Resources/YouTalkingToMe.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = YouTalkingToMe/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.youtalkingtome.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BA0000010000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = YouTalkingToMe/Resources/YouTalkingToMe.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = YouTalkingToMe/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.youtalkingtome.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B70000010000000000000001 /* Build configuration list for PBXProject "YouTalkingToMe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA0000010000000000000001 /* Debug */,
+				BA0000010000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B70000010000000000000003 /* Build configuration list for PBXNativeTarget "YouTalkingToMe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA0000010000000000000003 /* Debug */,
+				BA0000010000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B90000010000000000000001 /* Project object */;
+}
