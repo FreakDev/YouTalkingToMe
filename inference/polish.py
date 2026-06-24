@@ -16,6 +16,30 @@ POLISH_SYSTEM = (
 )
 
 
+_WRAPPING_QUOTE_PAIRS: tuple[tuple[str, str], ...] = (
+    ('"', '"'),
+    ("'", "'"),
+    ("`", "`"),
+    ("«", "»"),
+    ("\u201c", "\u201d"),  # “ … ”
+    ("\u2018", "\u2019"),  # ‘ … ’
+)
+
+
+def _strip_wrapping_quotes(text: str) -> str:
+    """Remove outer quote pairs when they wrap the entire model output."""
+    stripped = text.strip()
+    changed = True
+    while changed and len(stripped) >= 2:
+        changed = False
+        for open_q, close_q in _WRAPPING_QUOTE_PAIRS:
+            if stripped.startswith(open_q) and stripped.endswith(close_q):
+                stripped = stripped[len(open_q) : -len(close_q)].strip()
+                changed = True
+                break
+    return stripped
+
+
 def _wrap_dictation_input(raw_text: str) -> str:
     """Frame raw STT output so the model edits text instead of answering it."""
     return (
@@ -68,4 +92,4 @@ class PolishEngine:
             max_tokens=512,
             verbose=False,
         )
-        return response.strip()
+        return _strip_wrapping_quotes(response)

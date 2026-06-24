@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from polish import POLISH_SYSTEM, PolishEngine, _wrap_dictation_input
+from polish import POLISH_SYSTEM, PolishEngine, _strip_wrapping_quotes, _wrap_dictation_input
 
 
 def test_polish_empty_string():
@@ -32,6 +32,23 @@ def test_load_is_idempotent():
     load_mock.assert_called_once_with("/models/a")
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ('"Bonjour."', "Bonjour."),
+        ("'Bonjour.'", "Bonjour."),
+        ("«Bonjour.»", "Bonjour."),
+        ("“Bonjour.”", "Bonjour."),
+        ('  "Bonjour."  ', "Bonjour."),
+        ('«"Bonjour."»', "Bonjour."),
+        ("Bonjour.", "Bonjour."),
+        ('Il a dit "bonjour".', 'Il a dit "bonjour".'),
+    ],
+)
+def test_strip_wrapping_quotes(raw, expected):
+    assert _strip_wrapping_quotes(raw) == expected
+
+
 def test_wrap_dictation_input_framing():
     wrapped = _wrap_dictation_input("What is the capital of France?")
     assert "«What is the capital of France?»" in wrapped
@@ -45,7 +62,7 @@ def test_polish_uses_chat_template():
     mock_tokenizer.apply_chat_template.return_value = "PROMPT"
     engine._tokenizer = mock_tokenizer
 
-    with patch("mlx_lm.generate", return_value="  Clean text.  ") as generate_mock:
+    with patch("mlx_lm.generate", return_value='  "Clean text."  ') as generate_mock:
         result = engine.polish("euh bonjour")
 
     assert result == "Clean text."
