@@ -8,7 +8,6 @@ final class SettingsStore: ObservableObject {
         static let tier = "tier"
         static let hotkeyModifiers = "hotkeyModifiers"
         static let hotkeyKeyCode = "hotkeyKeyCode"
-        static let hasCompletedOnboarding = "hasCompletedOnboarding"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -17,13 +16,11 @@ final class SettingsStore: ObservableObject {
         let tier = ModelTier(rawValue: tierRaw) ?? .quality
         let modifiers = defaults.object(forKey: Keys.hotkeyModifiers) as? UInt ?? AppSettings.default.hotkeyModifiers
         let keyCode = defaults.object(forKey: Keys.hotkeyKeyCode) as? UInt16 ?? AppSettings.default.hotkeyKeyCode
-        let hasCompletedOnboarding = defaults.bool(forKey: Keys.hasCompletedOnboarding)
 
         settings = AppSettings(
             tier: tier,
             hotkeyModifiers: modifiers,
-            hotkeyKeyCode: keyCode,
-            hasCompletedOnboarding: hasCompletedOnboarding
+            hotkeyKeyCode: keyCode
         )
     }
 
@@ -31,6 +28,5 @@ final class SettingsStore: ObservableObject {
         defaults.set(settings.tier.rawValue, forKey: Keys.tier)
         defaults.set(settings.hotkeyModifiers, forKey: Keys.hotkeyModifiers)
         defaults.set(settings.hotkeyKeyCode, forKey: Keys.hotkeyKeyCode)
-        defaults.set(settings.hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding)
     }
 }

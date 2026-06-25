@@ -101,12 +101,10 @@ struct AppSettings {
     var tier: ModelTier
     var hotkeyModifiers: UInt
     var hotkeyKeyCode: UInt16
-    var hasCompletedOnboarding: Bool
 
     static let `default` = AppSettings(
         tier: .quality,
         hotkeyModifiers: UInt(NSEvent.ModifierFlags.option.rawValue),
-        hotkeyKeyCode: 49,
-        hasCompletedOnboarding: false
+        hotkeyKeyCode: 49
     )
 }

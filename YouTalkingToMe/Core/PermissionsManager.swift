@@ -39,6 +39,7 @@ final class PermissionsManager: ObservableObject {
     }
 
     func refresh() {
+        refreshCallCount += 1
         setIfChanged(\.microphoneGranted, checkMicrophonePermission())
         setIfChanged(\.accessibilityGranted, AXIsProcessTrusted())
 
@@ -60,6 +61,22 @@ final class PermissionsManager: ObservableObject {
     var allGranted: Bool {
         microphoneGranted && accessibilityGranted && (inputMonitoringGranted || hotkeyOperational)
     }
+
+    internal func setPermissionsForTesting(
+        microphoneGranted: Bool,
+        accessibilityGranted: Bool,
+        inputMonitoringGranted: Bool,
+        hotkeyOperational: Bool,
+        restartRequired: Bool = false
+    ) {
+        self.microphoneGranted = microphoneGranted
+        self.accessibilityGranted = accessibilityGranted
+        self.inputMonitoringGranted = inputMonitoringGranted
+        self.hotkeyOperational = hotkeyOperational
+        self.restartRequired = restartRequired
+    }
+
+    internal var refreshCallCount = 0
 
     func requestMicrophone() {
         if #available(macOS 14.0, *) {

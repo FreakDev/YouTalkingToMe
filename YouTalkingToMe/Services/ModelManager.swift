@@ -11,6 +11,10 @@ final class ModelManager: ObservableObject {
     private let inferenceClient: InferenceClient
     private let polishService: MLPolishService
     private var loadedTier: ModelTier?
+    private var sttDownloadProgress: Double = 0
+    private var polishDownloadProgress: Double = 0
+    internal var testingEnsureModelsHandler: ((ModelTier) async throws -> Void)?
+    internal var testingSkipRefreshModelStatuses = false
 
     init(inferenceClient: InferenceClient, polishService: MLPolishService) {
         self.inferenceClient = inferenceClient
@@ -19,11 +23,15 @@ final class ModelManager: ObservableObject {
     }
 
     var modelsDirectory: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return appSupport.appendingPathComponent("YouTalkingToMe/models", isDirectory: true)
+        AppPaths.modelsDirectory
     }
 
     func ensureModels(tier: ModelTier) async throws {
+        if let testingEnsureModelsHandler {
+            try await testingEnsureModelsHandler(tier)
+            return
+        }
+
         refreshModelStatuses()
         if shouldSkipLoading(tier: tier) {
             return
@@ -32,20 +40,30 @@ final class ModelManager: ObservableObject {
         isDownloading = true
         downloadProgress = 0
         downloadStage = "Préparation..."
+        sttDownloadProgress = 0
+        polishDownloadProgress = 0
 
         do {
-            try await inferenceClient.loadModels(tier: tier) { stage, model, percent in
-                Task { @MainActor [weak self] in
-                    self?.downloadStage = "\(stage): \(model)"
-                    self?.downloadProgress = percent * 0.5
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    try await self.inferenceClient.loadModels(tier: tier) { stage, model, percent in
+                        Task { @MainActor in
+                            self.sttDownloadProgress = percent
+                            self.downloadStage = "\(stage): \(model)"
+                            self.downloadProgress = (self.sttDownloadProgress + self.polishDownloadProgress) / 2
+                        }
+                    }
                 }
-            }
-
-            try await polishService.loadModel(tier: tier) { stage, model, percent in
-                Task { @MainActor [weak self] in
-                    self?.downloadStage = "\(stage): \(model)"
-                    self?.downloadProgress = 0.5 + (percent * 0.5)
+                group.addTask {
+                    try await self.polishService.loadModel(tier: tier) { stage, model, percent in
+                        Task { @MainActor in
+                            self.polishDownloadProgress = percent
+                            self.downloadStage = "\(stage): \(model)"
+                            self.downloadProgress = (self.sttDownloadProgress + self.polishDownloadProgress) / 2
+                        }
+                    }
                 }
+                try await group.waitForAll()
             }
 
             downloadProgress = 1
@@ -60,7 +78,14 @@ final class ModelManager: ObservableObject {
         }
     }
 
+    func shutdown() {
+        inferenceClient.stop()
+        polishService.unload()
+    }
+
     func refreshModelStatuses() {
+        guard !testingSkipRefreshModelStatuses else { return }
+
         tierStatuses = ModelTier.allCases.map { tier in
             TierInstallStatus(
                 tier: tier,
@@ -68,6 +93,20 @@ final class ModelManager: ObservableObject {
                 polishInstalled: isModelInstalled(repo: tier.polishModel)
             )
         }
+    }
+
+    internal func setTierStatusesForTesting(_ statuses: [TierInstallStatus]) {
+        tierStatuses = statuses
+    }
+
+    internal func setDownloadStateForTesting(
+        isDownloading: Bool,
+        progress: Double = 0,
+        stage: String = ""
+    ) {
+        self.isDownloading = isDownloading
+        downloadProgress = progress
+        downloadStage = stage
     }
 
     func isModelInstalled(repo: String) -> Bool {

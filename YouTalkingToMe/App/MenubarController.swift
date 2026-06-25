@@ -3,31 +3,33 @@ import Combine
 import SwiftUI
 
 @MainActor
-final class MenubarController: NSObject, NSWindowDelegate {
+final class MenubarController: NSObject {
     private let settingsStore: SettingsStore
     private let permissionsManager: PermissionsManager
     private let modelManager: ModelManager
     private let pipeline: PipelineCoordinator
-    private let inferenceClient: InferenceClient
 
     private var statusItem: NSStatusItem?
     private var hotkeyManager: HotkeyManager?
     private let overlayController = OverlayPanelController()
-    private var settingsWindow: NSWindow?
-    private var isSettingsPanelOpen = false
+    private let settingsWindowController: SettingsWindowController
+    private var cancellables: Set<AnyCancellable> = []
 
     init(
         settingsStore: SettingsStore,
         permissionsManager: PermissionsManager,
         modelManager: ModelManager,
-        pipeline: PipelineCoordinator,
-        inferenceClient: InferenceClient
+        pipeline: PipelineCoordinator
     ) {
         self.settingsStore = settingsStore
         self.permissionsManager = permissionsManager
         self.modelManager = modelManager
         self.pipeline = pipeline
-        self.inferenceClient = inferenceClient
+        self.settingsWindowController = SettingsWindowController(
+            settingsStore: settingsStore,
+            modelManager: modelManager,
+            permissions: permissionsManager
+        )
         super.init()
     }
 
@@ -41,13 +43,7 @@ final class MenubarController: NSObject, NSWindowDelegate {
         observeHotkeyRetry()
 
         if !permissionsManager.allGranted {
-            presentSettings()
-        }
-
-        if !settingsStore.settings.hasCompletedOnboarding {
-            settingsStore.settings.tier = .quality
-            settingsStore.settings.hasCompletedOnboarding = true
-            settingsStore.save()
+            settingsWindowController.present()
         }
 
         Task(priority: .utility) {
@@ -97,8 +93,7 @@ final class MenubarController: NSObject, NSWindowDelegate {
         }
         manager.onRelease = { [weak self] in
             Task { @MainActor in
-                guard let self, self.pipeline.overlayState == .listening else { return }
-                self.pipeline.endDictation()
+                self?.pipeline.endDictation()
             }
         }
 
@@ -114,15 +109,10 @@ final class MenubarController: NSObject, NSWindowDelegate {
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            self.permissionsManager.refresh()
             if self.hotkeyManager?.isOperational != true {
                 self.setupHotkeyIfNeeded()
             }
-            if self.isSettingsPanelOpen, let settingsWindow = self.settingsWindow {
-                NSApp.setActivationPolicy(.regular)
-                settingsWindow.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
-            }
+            self.settingsWindowController.restoreIfOpen()
         }
     }
 
@@ -145,53 +135,12 @@ final class MenubarController: NSObject, NSWindowDelegate {
             .store(in: &cancellables)
     }
 
-    private var cancellables: Set<AnyCancellable> = []
-
     @objc private func openSettings() {
-        presentSettings()
-    }
-
-    private func presentSettings() {
-        let view = SettingsView(
-            settingsStore: settingsStore,
-            modelManager: modelManager,
-            permissions: permissionsManager
-        )
-        let hosting = NSHostingController(rootView: view)
-
-        let window: NSWindow
-        if let settingsWindow {
-            window = settingsWindow
-            window.contentViewController = hosting
-        } else {
-            window = NSWindow(contentViewController: hosting)
-            window.title = "You Talking To Me"
-            window.styleMask = [.titled, .closable]
-            settingsWindow = window
-        }
-
-        configureSettingsWindow(window)
-        isSettingsPanelOpen = true
-        NSApp.setActivationPolicy(.regular)
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
-    private func configureSettingsWindow(_ window: NSWindow) {
-        window.isReleasedWhenClosed = false
-        window.hidesOnDeactivate = false
-        window.delegate = self
-    }
-
-    func windowWillClose(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow, window === settingsWindow else { return }
-        isSettingsPanelOpen = false
-        settingsWindow = nil
-        NSApp.setActivationPolicy(.accessory)
+        settingsWindowController.present()
     }
 
     @objc private func quit() {
-        inferenceClient.stop()
+        modelManager.shutdown()
         NSApp.terminate(nil)
     }
 }

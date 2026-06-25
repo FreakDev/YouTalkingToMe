@@ -22,7 +22,6 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.tier, .quality)
         XCTAssertEqual(store.settings.hotkeyModifiers, AppSettings.default.hotkeyModifiers)
         XCTAssertEqual(store.settings.hotkeyKeyCode, AppSettings.default.hotkeyKeyCode)
-        XCTAssertFalse(store.settings.hasCompletedOnboarding)
     }
 
     func testSaveAndLoadRoundTrip() {
@@ -30,13 +29,11 @@ final class SettingsStoreTests: XCTestCase {
         store.settings.tier = .quality
         store.settings.hotkeyModifiers = 999
         store.settings.hotkeyKeyCode = 123
-        store.settings.hasCompletedOnboarding = true
         store.save()
 
         let reloaded = SettingsStore(defaults: defaults)
         XCTAssertEqual(reloaded.settings.tier, .quality)
         XCTAssertEqual(reloaded.settings.hotkeyModifiers, 999)
         XCTAssertEqual(reloaded.settings.hotkeyKeyCode, 123)
-        XCTAssertTrue(reloaded.settings.hasCompletedOnboarding)
     }
 }

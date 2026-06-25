@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -18,6 +19,13 @@ def emit(payload: dict) -> None:
     sys.stdout.flush()
 
 
+def default_cache_dir() -> str:
+    return os.environ.get(
+        "YTTM_MODELS_CACHE_DIR",
+        str(Path.home() / "Library" / "Application Support" / "YouTalkingToMe" / "models"),
+    )
+
+
 def load_tiers() -> dict:
     with MODELS_CONFIG.open() as f:
         data = json.load(f)
@@ -29,27 +37,34 @@ def download_model(repo: str, cache_dir: str) -> str:
 
 
 class InferenceServer:
-    def __init__(self) -> None:
+    def __init__(self, cache_dir: str | None = None) -> None:
         self.tiers = load_tiers()
-        self.cache_dir = str(Path.home() / "Library" / "Application Support" / "YouTalkingToMe" / "models")
+        self.cache_dir = cache_dir or default_cache_dir()
         self.current_tier = "fast"
         self.stt_model_path: str | None = None
 
     def handle(self, message: dict) -> None:
         command = message.get("command")
+        request_id = message.get("request_id")
+
+        def emit_response(payload: dict) -> None:
+            if request_id:
+                payload["request_id"] = request_id
+            emit(payload)
+
         try:
             if command == "ping":
-                emit({"type": "result", "command": "ping", "ok": True})
+                emit_response({"type": "result", "command": "ping", "ok": True})
             elif command == "load_models":
-                self._load_models(message.get("tier", "fast"))
+                self._load_models(message.get("tier", "fast"), emit_response)
             elif command == "transcribe":
                 audio_path = message.get("audio_path", "")
                 text = transcribe(audio_path, self._stt_model())
-                emit({"type": "result", "command": "transcribe", "text": text})
+                emit_response({"type": "result", "command": "transcribe", "text": text})
             else:
-                emit({"type": "error", "message": f"Unknown command: {command}"})
+                emit_response({"type": "error", "message": f"Unknown command: {command}"})
         except Exception as exc:  # noqa: BLE001
-            emit({"type": "error", "message": str(exc), "trace": traceback.format_exc()})
+            emit_response({"type": "error", "message": str(exc), "trace": traceback.format_exc()})
 
     def _stt_repo(self) -> str:
         tier = self.tiers.get(self.current_tier, self.tiers["fast"])
@@ -60,7 +75,7 @@ class InferenceServer:
             return self.stt_model_path
         return self._stt_repo()
 
-    def _load_models(self, tier: str) -> None:
+    def _load_models(self, tier: str, emit_response) -> None:
         if tier not in self.tiers:
             raise ValueError(f"Unknown tier: {tier}")
 
@@ -73,7 +88,7 @@ class InferenceServer:
 
         self.stt_model_path = stt_path
 
-        emit(
+        emit_response(
             {
                 "type": "result",
                 "command": "load_models",

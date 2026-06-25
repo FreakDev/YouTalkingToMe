@@ -1,42 +1,14 @@
 import Foundation
 
-struct InferenceMessage: Decodable {
-    let type: String
-    let command: String?
-    let text: String?
-    let rawText: String?
-    let message: String?
-    let stage: String?
-    let model: String?
-    let percent: Double?
-    let tier: String?
-    let ok: Bool?
-
-    enum CodingKeys: String, CodingKey {
-        case type
-        case command
-        case text
-        case rawText = "raw_text"
-        case message
-        case stage
-        case model
-        case percent
-        case tier
-        case ok
-    }
-}
-
 final class InferenceClient: @unchecked Sendable {
     private var process: Process?
     private var inputPipe: Pipe?
     private var outputPipe: Pipe?
-    private var pendingHandlers: [String: (Result<InferenceMessage, Error>) -> Void] = [:]
-    private var loadHandler: ((InferenceMessage) -> Void)?
+    private var pendingHandlers: [UUID: (Result<InferenceEvent, Error>) -> Void] = [:]
+    private var progressHandler: (@Sendable (String, String, Double) -> Void)?
     private let queue = DispatchQueue(label: "InferenceClient.queue")
     private var outputBuffer = ""
     private var isReady = false
-
-    var onProgress: ((String, String, Double) -> Void)?
 
     func start() throws {
         guard process == nil else { return }
@@ -49,6 +21,9 @@ final class InferenceClient: @unchecked Sendable {
         proc.executableURL = python
         proc.arguments = [server.path]
         proc.currentDirectoryURL = inferenceDir
+        var environment = ProcessInfo.processInfo.environment
+        environment[AppPaths.modelsCacheEnvironmentKey] = AppPaths.modelsDirectory.path
+        proc.environment = environment
 
         let input = Pipe()
         let output = Pipe()
@@ -91,24 +66,32 @@ final class InferenceClient: @unchecked Sendable {
         inputPipe = nil
         outputPipe = nil
         isReady = false
+        queue.async { [weak self] in
+            self?.pendingHandlers.removeAll()
+            self?.progressHandler = nil
+        }
     }
 
     func ping() async throws {
-        let message = try await send(command: "ping")
-        guard message.ok == true else {
+        let event = try await send(command: "ping")
+        guard case .pingResult(let ok, _) = event, ok else {
             throw DictationError.inferenceNotReady
         }
     }
 
-    func loadModels(tier: ModelTier, onProgress: @Sendable @escaping (String, String, Double) -> Void) async throws {
-        loadHandler = { message in
-            if message.type == "progress", let stage = message.stage, let model = message.model, let percent = message.percent {
-                onProgress(stage, model, percent)
-            }
-        }
-        let message = try await send(command: "load_models", payload: ["tier": tier.rawValue], timeout: 600)
-        loadHandler = nil
-        guard message.command == "load_models" else {
+    func loadModels(
+        tier: ModelTier,
+        onProgress: @Sendable @escaping (String, String, Double) -> Void
+    ) async throws {
+        progressHandler = onProgress
+        defer { progressHandler = nil }
+
+        let event = try await send(
+            command: "load_models",
+            payload: ["tier": tier.rawValue],
+            timeout: 600
+        )
+        guard case .loadModelsResult = event else {
             throw DictationError.inferenceNotReady
         }
         isReady = true
@@ -117,18 +100,29 @@ final class InferenceClient: @unchecked Sendable {
     func transcribe(audioURL: URL) async throws -> String {
         guard isReady else { throw DictationError.inferenceNotReady }
         AppLogger.info("Sending transcribe for \(audioURL.lastPathComponent)")
-        let message = try await send(
+        let event = try await send(
             command: "transcribe",
             payload: ["audio_path": audioURL.path],
             timeout: 120
         )
-        return message.text ?? ""
+        guard case .transcribeResult(let text, _) = event else {
+            throw DictationError.inferenceNotReady
+        }
+        return text
     }
 
-    private func send(command: String, payload: [String: Any] = [:], timeout: TimeInterval = 300) async throws -> InferenceMessage {
+    private func send(
+        command: String,
+        payload: [String: Any] = [:],
+        timeout: TimeInterval = 300
+    ) async throws -> InferenceEvent {
         try startIfNeeded()
 
-        var body: [String: Any] = ["command": command]
+        let requestID = UUID()
+        var body: [String: Any] = [
+            "command": command,
+            "request_id": requestID.uuidString,
+        ]
         for (key, value) in payload {
             body[key] = value
         }
@@ -137,34 +131,30 @@ final class InferenceClient: @unchecked Sendable {
             throw DictationError.inferenceNotReady
         }
 
-        return try await withThrowingTaskGroup(of: InferenceMessage.self) { group in
-            group.addTask {
-                try await withCheckedThrowingContinuation { continuation in
-                    self.queue.async { [weak self] in
-                        guard let self, let inputPipe else {
-                            continuation.resume(throwing: DictationError.inferenceNotReady)
-                            return
-                        }
-                        self.pendingHandlers[command] = { result in
-                            continuation.resume(with: result)
-                        }
-                        inputPipe.fileHandleForWriting.write((jsonLine + "\n").data(using: .utf8)!)
-                    }
+        return try await withCheckedThrowingContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self, let inputPipe else {
+                    continuation.resume(throwing: DictationError.inferenceNotReady)
+                    return
                 }
+
+                self.pendingHandlers[requestID] = { result in
+                    continuation.resume(with: result)
+                }
+                inputPipe.fileHandleForWriting.write((jsonLine + "\n").data(using: .utf8)!)
             }
 
-            group.addTask {
+            Task { [weak self] in
                 try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                throw NSError(
-                    domain: "InferenceClient",
-                    code: 2,
-                    userInfo: [NSLocalizedDescriptionKey: "Délai d'inférence expiré (\(Int(timeout))s)."]
+                self?.failRequest(
+                    requestID,
+                    error: NSError(
+                        domain: "InferenceClient",
+                        code: 2,
+                        userInfo: [NSLocalizedDescriptionKey: "Délai d'inférence expiré (\(Int(timeout))s)."]
+                    )
                 )
             }
-
-            let result = try await group.next()!
-            group.cancelAll()
-            return result
         }
     }
 
@@ -186,45 +176,40 @@ final class InferenceClient: @unchecked Sendable {
     }
 
     private func processLine(_ line: String) {
-        guard let message = InferenceMessage.decodeLine(line) else { return }
+        guard let event = InferenceEvent.decodeLine(line) else { return }
 
-        if message.type == "progress" {
-            if let handler = loadHandler {
-                handler(message)
-            } else if let stage = message.stage, let model = message.model, let percent = message.percent {
-                onProgress?(stage, model, percent)
+        switch event {
+        case .progress(let stage, let model, let percent, _):
+            progressHandler?(stage, model, percent)
+        case .error(let message, let requestID):
+            AppLogger.error("Inference server error: \(message)")
+            if let requestID, let id = UUID(uuidString: requestID) {
+                failRequest(
+                    id,
+                    error: NSError(
+                        domain: "InferenceClient",
+                        code: 1,
+                        userInfo: [NSLocalizedDescriptionKey: message]
+                    )
+                )
             }
-            return
-        }
-
-        if message.type == "error" {
-            let errorMessage = message.message ?? "Inference error"
-            AppLogger.error("Inference server error: \(errorMessage)")
-            resolvePending(with: .failure(NSError(domain: "InferenceClient", code: 1, userInfo: [NSLocalizedDescriptionKey: errorMessage])))
-            return
-        }
-
-        if message.type == "result", let command = message.command {
-            resolvePending(command: command, result: .success(message))
+        case .pingResult, .loadModelsResult, .transcribeResult:
+            resolveRequest(for: event)
         }
     }
 
-    private func resolvePending(command: String, result: Result<InferenceMessage, Error>) {
+    private func resolveRequest(for event: InferenceEvent) {
+        guard let requestID = event.requestID, let id = UUID(uuidString: requestID) else { return }
         queue.async { [weak self] in
-            guard let self else { return }
-            if let handler = self.pendingHandlers.removeValue(forKey: command) {
-                handler(result)
-            }
+            guard let self, let handler = self.pendingHandlers.removeValue(forKey: id) else { return }
+            handler(.success(event))
         }
     }
 
-    private func resolvePending(with result: Result<InferenceMessage, Error>) {
+    private func failRequest(_ requestID: UUID, error: Error) {
         queue.async { [weak self] in
-            guard let self else { return }
-            for (_, handler) in self.pendingHandlers {
-                handler(result)
-            }
-            self.pendingHandlers.removeAll()
+            guard let self, let handler = self.pendingHandlers.removeValue(forKey: requestID) else { return }
+            handler(.failure(error))
         }
     }
 

@@ -6,19 +6,8 @@ import MLXLMCommon
 
 @MainActor
 final class MLPolishService {
-    static let shared = MLPolishService()
-
     private var modelContainer: ModelContainer?
     private var loadedTier: ModelTier?
-
-    private init() {}
-
-    var modelsDirectory: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let directory = appSupport.appendingPathComponent("YouTalkingToMe/models", isDirectory: true)
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return directory
-    }
 
     var isLoaded: Bool { modelContainer != nil }
 
@@ -32,13 +21,13 @@ final class MLPolishService {
 
         unload()
 
-        let configuration = configuration(for: tier)
+        let configuration = ModelConfiguration(id: tier.polishModel)
         let modelName = configuration.name
         onProgress("download_polish", modelName, 0)
 
         Memory.cacheLimit = 20 * 1024 * 1024
 
-        let cache = HubCache(cacheDirectory: modelsDirectory)
+        let cache = HubCache(cacheDirectory: AppPaths.modelsDirectory)
         let hub = HubClient(cache: cache)
         let container = try await LLMModelFactory.shared.loadContainer(
             from: HuggingFaceHubDownloader(hub),
@@ -76,14 +65,5 @@ final class MLPolishService {
     func unload() {
         modelContainer = nil
         loadedTier = nil
-    }
-
-    private func configuration(for tier: ModelTier) -> ModelConfiguration {
-        switch tier {
-        case .fast:
-            LLMRegistry.gemma4_e2b_it_4bit
-        case .quality:
-            LLMRegistry.gemma4_e4b_it_4bit
-        }
     }
 }

@@ -2,27 +2,10 @@ import AppKit
 import SwiftUI
 
 struct SettingsView: View {
-  @ObservedObject var settingsStore: SettingsStore
-  @ObservedObject var modelManager: ModelManager
-  @ObservedObject var permissions: PermissionsManager
-
-    @State private var selectedTier: ModelTier
-    @State private var isReloading = false
-    @State private var errorMessage: String?
-    @State private var tierPendingDeletion: ModelTier?
-    @State private var tierPendingDownload: ModelTier?
-    @State private var isRevertingTierSelection = false
-
-    init(
-        settingsStore: SettingsStore,
-        modelManager: ModelManager,
-        permissions: PermissionsManager
-    ) {
-        self.settingsStore = settingsStore
-        self.modelManager = modelManager
-        self.permissions = permissions
-        _selectedTier = State(initialValue: settingsStore.settings.tier)
-    }
+    @ObservedObject var settingsStore: SettingsStore
+    @ObservedObject var modelManager: ModelManager
+    @ObservedObject var permissions: PermissionsManager
+    @ObservedObject var tierSelection: TierSelectionModel
 
     var body: some View {
         Form {
@@ -30,124 +13,96 @@ struct SettingsView: View {
             permissionsSection
             modelsSection
 
-            if let errorMessage {
+            if let errorMessage = tierSelection.errorMessage {
                 Section {
                     Text(errorMessage).foregroundStyle(.red)
+                        .accessibilityIdentifier("settings.error-message")
                 }
             }
         }
         .formStyle(.grouped)
         .frame(width: 420, height: 460)
+        .accessibilityIdentifier("settings.form")
         .onAppear {
-            permissions.refresh()
-            modelManager.refreshModelStatuses()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            permissions.refresh()
             modelManager.refreshModelStatuses()
         }
         .confirmationDialog(
             "Supprimer ces modèles ?",
             isPresented: Binding(
-                get: { tierPendingDeletion != nil },
-                set: { if !$0 { tierPendingDeletion = nil } }
+                get: { tierSelection.tierPendingDeletion != nil },
+                set: { if !$0 { tierSelection.cancelDelete() } }
             ),
             titleVisibility: .visible
         ) {
             Button("Supprimer", role: .destructive) {
-                if let tier = tierPendingDeletion {
-                    deleteTier(tier)
-                }
-                tierPendingDeletion = nil
+                tierSelection.confirmDelete()
             }
             Button("Annuler", role: .cancel) {
-                tierPendingDeletion = nil
+                tierSelection.cancelDelete()
             }
         } message: {
-            if let tier = tierPendingDeletion {
+            if let tier = tierSelection.tierPendingDeletion {
                 Text("Les modèles \(tier.bundledModelsDescription) seront retirés de votre Mac.")
             }
         }
         .confirmationDialog(
             "Télécharger les modèles ?",
             isPresented: Binding(
-                get: { tierPendingDownload != nil },
-                set: { if !$0 { tierPendingDownload = nil } }
+                get: { tierSelection.tierPendingDownload != nil },
+                set: { if !$0 { tierSelection.cancelDownloadConfirmation() } }
             ),
             titleVisibility: .visible
         ) {
             Button("Télécharger") {
-                if let tier = tierPendingDownload {
-                    reloadModels(for: tier)
-                }
-                tierPendingDownload = nil
+                tierSelection.confirmDownload()
             }
             Button("Annuler", role: .cancel) {
-                isRevertingTierSelection = true
-                selectedTier = settingsStore.settings.tier
-                tierPendingDownload = nil
+                tierSelection.cancelDownloadConfirmation()
             }
         } message: {
-            if let tier = tierPendingDownload {
+            if let tier = tierSelection.tierPendingDownload {
                 Text("Les modèles \(tier.bundledModelsDescription) ne sont pas installés sur votre Mac.")
             }
         }
-    }
-
-    private var selectedTierIsAbsent: Bool {
-        selectedTierStatus?.isFullyInstalled != true && !isDownloadingFromNetwork
-    }
-
-    private var selectedTierStatus: TierInstallStatus? {
-        modelManager.tierStatuses.first { $0.tier == selectedTier }
-    }
-
-    private var isLoadingSelectedTier: Bool {
-        isReloading || modelManager.isDownloading
-    }
-
-    private var isDownloadingFromNetwork: Bool {
-        isLoadingSelectedTier && selectedTierStatus?.isFullyInstalled != true
-    }
-
-    private var showsDownloadProgress: Bool {
-        isDownloadingFromNetwork
     }
 
     @ViewBuilder
     private var dictationSection: some View {
         Section("Dictée") {
             LabeledContent("Hotkey") {
-                Text("Option + Space")
-                    .foregroundStyle(.secondary)
+                Text(HotkeyDisplay.label(
+                    modifiers: settingsStore.settings.hotkeyModifiers,
+                    keyCode: settingsStore.settings.hotkeyKeyCode
+                ))
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("settings.hotkey.label")
             }
             LabeledContent("Qualité optimale") {
                 HStack(spacing: 12) {
-                    if isDownloadingFromNetwork {
+                    if tierSelection.isDownloadingFromNetwork {
                         Text("Téléchargement des modèles")
                             .font(.caption)
                             .foregroundStyle(.orange)
-                    } else if selectedTierIsAbsent {
+                            .accessibilityIdentifier("settings.tier.download-badge")
+                    } else if tierSelection.selectedTierIsAbsent {
                         Text("Modèle absent")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("settings.tier.absent-badge")
                     }
 
-                    Picker("", selection: $selectedTier) {
+                    Picker("", selection: $tierSelection.selectedTier) {
                         ForEach(ModelTier.allCases) { tier in
                             Text(tier.displayName).tag(tier)
                         }
                     }
                     .labelsHidden()
                     .fixedSize()
+                    .accessibilityIdentifier("settings.tier.picker")
                 }
             }
-            .onChange(of: selectedTier) { _, newValue in
-                if isRevertingTierSelection {
-                    isRevertingTierSelection = false
-                    return
-                }
-                handleTierSelectionChange(newValue)
+            .onChange(of: tierSelection.selectedTier) { _, newValue in
+                tierSelection.tierSelectionChanged(newValue)
             }
         }
     }
@@ -158,10 +113,11 @@ struct SettingsView: View {
             ForEach(modelManager.tierStatuses) { status in
                 tierRow(status)
             }
-            if showsDownloadProgress {
+            if tierSelection.showsDownloadProgress {
                 ProgressView(value: modelManager.downloadProgress) {
                     Text(modelManager.downloadStage)
                 }
+                .accessibilityIdentifier("settings.models.progress")
             }
         }
     }
@@ -173,6 +129,7 @@ struct SettingsView: View {
                 Text("Autorisez les permissions ci-dessous pour activer la dictée vocale push-to-talk dans toutes vos apps.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("settings.permissions.prompt")
             }
             permissionRow(
                 title: "Microphone",
@@ -200,8 +157,10 @@ struct SettingsView: View {
             Button("Vérifier les permissions") {
                 permissions.refresh()
             }
+            .accessibilityIdentifier("settings.permissions.verify-button")
         } header: {
             Text("Permissions")
+                .accessibilityIdentifier("settings.section.permissions")
         }
     }
 
@@ -215,27 +174,30 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            if status.hasAnyInstalled {
+                Text(status.statusLabel)
+                    .font(.caption)
+                    .foregroundStyle(status.isFullyInstalled ? .green : .orange)
+            }
             if status.isFullyInstalled {
-                Text("Téléchargé")
-                    .font(.caption)
-                    .foregroundStyle(.green)
                 Button("Supprimer") {
-                    tierPendingDeletion = status.tier
+                    tierSelection.requestDelete(status.tier)
                 }
+                .accessibilityIdentifier("settings.models.delete-button.\(status.tier.rawValue)")
             } else if status.hasAnyInstalled {
-                Text("Partiel")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
                 Button("Télécharger") {
-                    reloadModels(for: status.tier)
+                    tierSelection.reloadModels(for: status.tier)
                 }
+                .accessibilityIdentifier("settings.models.download-button.\(status.tier.rawValue)")
                 Button("Supprimer") {
-                    tierPendingDeletion = status.tier
+                    tierSelection.requestDelete(status.tier)
                 }
+                .accessibilityIdentifier("settings.models.delete-button.\(status.tier.rawValue)")
             } else {
                 Button("Télécharger") {
-                    reloadModels(for: status.tier)
+                    tierSelection.reloadModels(for: status.tier)
                 }
+                .accessibilityIdentifier("settings.models.download-button.\(status.tier.rawValue)")
             }
         }
     }
@@ -256,43 +218,6 @@ struct SettingsView: View {
                 Button("Autoriser", action: action)
             }
             Button("Paramètres", action: settingsAction)
-        }
-    }
-
-    private func handleTierSelectionChange(_ tier: ModelTier) {
-        let status = modelManager.tierStatuses.first { $0.tier == tier }
-        if status?.isFullyInstalled == true {
-            reloadModels(for: tier)
-        } else {
-            tierPendingDownload = tier
-        }
-    }
-
-    private func reloadModels(for tier: ModelTier) {
-        selectedTier = tier
-        settingsStore.settings.tier = tier
-        settingsStore.save()
-        isReloading = true
-        errorMessage = nil
-
-        Task {
-            do {
-                try await modelManager.ensureModels(tier: tier)
-                await MainActor.run { isReloading = false }
-            } catch {
-                await MainActor.run {
-                    isReloading = false
-                    errorMessage = error.localizedDescription
-                }
-            }
-        }
-    }
-
-    private func deleteTier(_ tier: ModelTier) {
-        do {
-            try modelManager.deleteTier(tier, activeTier: settingsStore.settings.tier)
-        } catch {
-            errorMessage = error.localizedDescription
         }
     }
 }

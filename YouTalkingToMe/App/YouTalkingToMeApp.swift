@@ -22,26 +22,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settingsStore = SettingsStore()
         let permissionsManager = PermissionsManager()
         let inferenceClient = InferenceClient()
-        let polishService = MLPolishService.shared
-        let dictationInference = DictationInferenceService(
-            sttClient: inferenceClient,
-            polishService: polishService
-        )
+        let polishService = MLPolishService()
         let modelManager = ModelManager(
             inferenceClient: inferenceClient,
             polishService: polishService
         )
         let pipeline = PipelineCoordinator(
-            inferenceClient: dictationInference,
-            settingsStore: settingsStore
+            sttClient: inferenceClient,
+            polishService: polishService
         )
 
         menubarController = MenubarController(
             settingsStore: settingsStore,
             permissionsManager: permissionsManager,
             modelManager: modelManager,
-            pipeline: pipeline,
-            inferenceClient: inferenceClient
+            pipeline: pipeline
         )
         menubarController?.bootstrap()
     }

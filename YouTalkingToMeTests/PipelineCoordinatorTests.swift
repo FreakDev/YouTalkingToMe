@@ -4,19 +4,11 @@ import XCTest
 
 @MainActor
 final class PipelineCoordinatorTests: XCTestCase {
-    private var settingsStore: SettingsStore!
-
-    override func setUp() {
-        let suiteName = "YouTalkingToMeTests.Pipeline.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        settingsStore = SettingsStore(defaults: defaults)
-    }
-
     func testStartDictationSetsListeningWhenAudioStarts() {
         let audio = MockAudioCapture(startShouldThrow: false)
         let pipeline = PipelineCoordinator(
-            inferenceClient: MockInferenceClient(),
-            settingsStore: settingsStore,
+            sttClient: MockSTTClient(),
+            polishService: MockPolishService(),
             audioCapture: audio,
             textInjector: MockTextInjector()
         )
@@ -26,12 +18,28 @@ final class PipelineCoordinatorTests: XCTestCase {
         XCTAssertTrue(audio.didStart)
     }
 
+    func testStartDictationIgnoresSecondPressWhileListening() {
+        let audio = MockAudioCapture(startShouldThrow: false)
+        let pipeline = PipelineCoordinator(
+            sttClient: MockSTTClient(),
+            polishService: MockPolishService(),
+            audioCapture: audio,
+            textInjector: MockTextInjector()
+        )
+
+        pipeline.startDictation()
+        pipeline.startDictation()
+
+        XCTAssertEqual(pipeline.overlayState, .listening)
+        XCTAssertEqual(audio.startCount, 1)
+    }
+
     func testStartDictationShowsErrorWhenAudioFails() {
         struct FakeError: Error {}
         let audio = MockAudioCapture(startShouldThrow: true, startError: FakeError())
         let pipeline = PipelineCoordinator(
-            inferenceClient: MockInferenceClient(),
-            settingsStore: settingsStore,
+            sttClient: MockSTTClient(),
+            polishService: MockPolishService(),
             audioCapture: audio,
             textInjector: MockTextInjector()
         )
@@ -51,32 +59,36 @@ final class PipelineCoordinatorTests: XCTestCase {
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
         FileManager.default.createFile(atPath: tmp.path, contents: Data())
         let audio = MockAudioCapture(stopURL: tmp)
-        let inference = MockInferenceClient(result: (raw: "bonjour", polished: "Bonjour."))
+        let stt = MockSTTClient(result: "bonjour")
+        let polish = MockPolishService(result: "Bonjour.")
         let injector = MockTextInjector(shouldSucceed: true)
         let pipeline = PipelineCoordinator(
-            inferenceClient: inference,
-            settingsStore: settingsStore,
+            sttClient: stt,
+            polishService: polish,
             audioCapture: audio,
             textInjector: injector
         )
 
+        pipeline.startDictation()
         pipeline.endDictation()
         try? await Task.sleep(nanoseconds: 300_000_000)
 
         XCTAssertEqual(pipeline.overlayState, .hidden)
-        XCTAssertTrue(inference.didTranscribe)
+        XCTAssertTrue(stt.didTranscribe)
+        XCTAssertTrue(polish.didPolish)
         XCTAssertTrue(injector.didInject)
     }
 
     func testEndDictationEmptyAudioShowsError() async {
         let audio = MockAudioCapture(stopURL: nil)
         let pipeline = PipelineCoordinator(
-            inferenceClient: MockInferenceClient(),
-            settingsStore: settingsStore,
+            sttClient: MockSTTClient(),
+            polishService: MockPolishService(),
             audioCapture: audio,
             textInjector: MockTextInjector()
         )
 
+        pipeline.startDictation()
         pipeline.endDictation()
         try? await Task.sleep(nanoseconds: 300_000_000)
 
@@ -91,14 +103,14 @@ final class PipelineCoordinatorTests: XCTestCase {
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
         FileManager.default.createFile(atPath: tmp.path, contents: Data())
         let audio = MockAudioCapture(stopURL: tmp)
-        let inference = MockInferenceClient(result: (raw: "", polished: "   "))
         let pipeline = PipelineCoordinator(
-            inferenceClient: inference,
-            settingsStore: settingsStore,
+            sttClient: MockSTTClient(result: ""),
+            polishService: MockPolishService(result: "   "),
             audioCapture: audio,
             textInjector: MockTextInjector()
         )
 
+        pipeline.startDictation()
         pipeline.endDictation()
         try? await Task.sleep(nanoseconds: 300_000_000)
 
@@ -113,15 +125,14 @@ final class PipelineCoordinatorTests: XCTestCase {
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
         FileManager.default.createFile(atPath: tmp.path, contents: Data())
         let audio = MockAudioCapture(stopURL: tmp)
-        let inference = MockInferenceClient(result: (raw: "hi", polished: "Hi"))
-        let injector = MockTextInjector(shouldSucceed: false)
         let pipeline = PipelineCoordinator(
-            inferenceClient: inference,
-            settingsStore: settingsStore,
+            sttClient: MockSTTClient(result: "hi"),
+            polishService: MockPolishService(result: "Hi"),
             audioCapture: audio,
-            textInjector: injector
+            textInjector: MockTextInjector(shouldSucceed: false)
         )
 
+        pipeline.startDictation()
         pipeline.endDictation()
         try? await Task.sleep(nanoseconds: 300_000_000)
 
@@ -133,17 +144,36 @@ final class PipelineCoordinatorTests: XCTestCase {
     }
 }
 
-private final class MockInferenceClient: InferenceServing, @unchecked Sendable {
-    var result: (raw: String, polished: String) = (raw: "x", polished: "X")
+private final class MockSTTClient: STTServing, @unchecked Sendable {
+    var result = "x"
     var didTranscribe = false
     var error: Error?
 
-    init(result: (raw: String, polished: String) = (raw: "x", polished: "X")) {
+    init(result: String = "x") {
         self.result = result
     }
 
-    func transcribeAndPolish(audioURL: URL) async throws -> (raw: String, polished: String) {
+    func transcribe(audioURL: URL) async throws -> String {
         didTranscribe = true
+        if let error {
+            throw error
+        }
+        return result
+    }
+}
+
+@MainActor
+private final class MockPolishService: PolishServing {
+    var result = "X"
+    var didPolish = false
+    var error: Error?
+
+    init(result: String = "X") {
+        self.result = result
+    }
+
+    func polish(_ rawText: String) async throws -> String {
+        didPolish = true
         if let error {
             throw error
         }
@@ -156,6 +186,7 @@ private final class MockAudioCapture: AudioCapturing {
     var startError: Error = DictationError.emptyAudio
     var stopURL: URL?
     var didStart = false
+    var startCount = 0
 
     init(
         startShouldThrow: Bool = false,
@@ -168,6 +199,7 @@ private final class MockAudioCapture: AudioCapturing {
     }
 
     func start() throws {
+        startCount += 1
         didStart = true
         if startShouldThrow {
             throw startError

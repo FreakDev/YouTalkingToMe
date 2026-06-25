@@ -1,12 +1,5 @@
 import Foundation
 
-extension InferenceMessage {
-    static func decodeLine(_ line: String) -> InferenceMessage? {
-        guard !line.isEmpty, let lineData = line.data(using: .utf8) else { return nil }
-        return try? JSONDecoder().decode(InferenceMessage.self, from: lineData)
-    }
-}
-
 enum InferenceDirectoryResolver {
     static func resolve(
         bundleResourceURL: URL?,
@@ -40,8 +33,12 @@ enum InferenceDirectoryResolver {
     }
 }
 
-protocol InferenceServing: AnyObject, Sendable {
-    func transcribeAndPolish(audioURL: URL) async throws -> (raw: String, polished: String)
+protocol STTServing: AnyObject, Sendable {
+    func transcribe(audioURL: URL) async throws -> String
+}
+
+protocol PolishServing: AnyObject, Sendable {
+    func polish(_ rawText: String) async throws -> String
 }
 
 protocol AudioCapturing: AnyObject {
@@ -57,3 +54,7 @@ protocol TextInjecting: AnyObject {
 }
 
 extension TextInjector: TextInjecting {}
+
+extension InferenceClient: STTServing {}
+
+extension MLPolishService: PolishServing {}

@@ -11,6 +11,20 @@ def test_ping(inference_server):
     assert outputs == [{"type": "result", "command": "ping", "ok": True}]
 
 
+def test_ping_echoes_request_id(inference_server):
+    server, outputs = inference_server
+    server.handle({"command": "ping", "request_id": "req-123"})
+    assert outputs == [{"type": "result", "command": "ping", "ok": True, "request_id": "req-123"}]
+
+
+def test_cache_dir_uses_environment(monkeypatch, emit_capture):
+    import server as server_module
+
+    monkeypatch.setenv("YTTM_MODELS_CACHE_DIR", "/tmp/custom-models")
+    server = server_module.InferenceServer()
+    assert server.cache_dir == "/tmp/custom-models"
+
+
 def test_unknown_command(inference_server):
     server, outputs = inference_server
     server.handle({"command": "foo"})

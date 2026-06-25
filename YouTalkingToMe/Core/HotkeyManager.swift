@@ -95,24 +95,15 @@ final class HotkeyManager: @unchecked Sendable {
             }
         case .keyUp:
             if isActive && keyCode == requiredKeyCode {
-                isActive = false
-                DispatchQueue.main.async { [weak self] in
-                    self?.onRelease?()
-                }
+                deactivateHotkey()
                 return true
             }
             if isActive && !hasRequiredModifiers(flags) {
-                isActive = false
-                DispatchQueue.main.async { [weak self] in
-                    self?.onRelease?()
-                }
+                deactivateHotkey()
             }
         case .flagsChanged:
             if isActive && !hasRequiredModifiers(flags) {
-                isActive = false
-                DispatchQueue.main.async { [weak self] in
-                    self?.onRelease?()
-                }
+                deactivateHotkey()
             }
         default:
             break
@@ -130,5 +121,13 @@ final class HotkeyManager: @unchecked Sendable {
         let current = flags & modifierMask
         let required = UInt64(requiredModifiers) & modifierMask
         return current == required
+    }
+
+    private func deactivateHotkey() {
+        guard isActive else { return }
+        isActive = false
+        DispatchQueue.main.async { [weak self] in
+            self?.onRelease?()
+        }
     }
 }

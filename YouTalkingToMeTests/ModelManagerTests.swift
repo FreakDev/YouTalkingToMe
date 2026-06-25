@@ -16,7 +16,7 @@ final class ModelManagerTests: XCTestCase {
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
-        let manager = ModelManager(inferenceClient: InferenceClient(), polishService: MLPolishService.shared)
+        let manager = ModelManager(inferenceClient: InferenceClient(), polishService: MLPolishService())
         let repo = "mlx-community/whisper-small-mlx"
         let cacheDirectory = root
             .appendingPathComponent(ModelManager.cacheDirectoryName(for: repo), isDirectory: true)
@@ -35,7 +35,7 @@ final class ModelManagerTests: XCTestCase {
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
-        let manager = ModelManager(inferenceClient: InferenceClient(), polishService: MLPolishService.shared)
+        let manager = ModelManager(inferenceClient: InferenceClient(), polishService: MLPolishService())
         let tier = ModelTier.fast
 
         XCTAssertEqual(

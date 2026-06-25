@@ -25,9 +25,13 @@
 		B10000010000000000000017 /* PolishPromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000019 /* PolishPromptBuilder.swift */; };
 		B10000010000000000000018 /* PolishOutputSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000020 /* PolishOutputSanitizer.swift */; };
 		B10000010000000000000019 /* MLPolishService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000021 /* MLPolishService.swift */; };
-		B10000010000000000000020 /* DictationInferenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000022 /* DictationInferenceService.swift */; };
 		B10000010000000000000026 /* HuggingFaceIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000023 /* HuggingFaceIntegration.swift */; };
 		B10000010000000000000027 /* InferenceSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000024 /* InferenceSupport.swift */; };
+		B10000010000000000000028 /* InferenceEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000025 /* InferenceEvent.swift */; };
+		B10000010000000000000029 /* AppPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000026 /* AppPaths.swift */; };
+		B10000010000000000000030 /* HotkeyDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000027 /* HotkeyDisplay.swift */; };
+		B10000010000000000000031 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000028 /* SettingsWindowController.swift */; };
+		B10000010000000000000032 /* TierSelectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000029 /* TierSelectionModel.swift */; };
 		B10000010000000000000021 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = C10000010000000000000001 /* MLXLLM */; };
 		B10000010000000000000022 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = C10000010000000000000002 /* MLXLMCommon */; };
 		B10000010000000000000024 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C10000010000000000000004 /* HuggingFace */; };
@@ -55,9 +59,13 @@
 		B20000010000000000000019 /* PolishPromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishPromptBuilder.swift; sourceTree = "<group>"; };
 		B20000010000000000000020 /* PolishOutputSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishOutputSanitizer.swift; sourceTree = "<group>"; };
 		B20000010000000000000021 /* MLPolishService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLPolishService.swift; sourceTree = "<group>"; };
-		B20000010000000000000022 /* DictationInferenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationInferenceService.swift; sourceTree = "<group>"; };
 		B20000010000000000000023 /* HuggingFaceIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HuggingFaceIntegration.swift; sourceTree = "<group>"; };
 		B20000010000000000000024 /* InferenceSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceSupport.swift; sourceTree = "<group>"; };
+		B20000010000000000000025 /* InferenceEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceEvent.swift; sourceTree = "<group>"; };
+		B20000010000000000000026 /* AppPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPaths.swift; sourceTree = "<group>"; };
+		B20000010000000000000027 /* HotkeyDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyDisplay.swift; sourceTree = "<group>"; };
+		B20000010000000000000028 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		B20000010000000000000029 /* TierSelectionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TierSelectionModel.swift; sourceTree = "<group>"; };
 		B30000010000000000000001 /* YouTalkingToMe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YouTalkingToMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -110,6 +118,7 @@
 			children = (
 				B20000010000000000000001 /* YouTalkingToMeApp.swift */,
 				B20000010000000000000002 /* MenubarController.swift */,
+				B20000010000000000000028 /* SettingsWindowController.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -132,6 +141,7 @@
 				B20000010000000000000008 /* OverlayPanel.swift */,
 				B20000010000000000000009 /* OverlayView.swift */,
 				B20000010000000000000010 /* SettingsView.swift */,
+				B20000010000000000000029 /* TierSelectionModel.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -146,9 +156,9 @@
 				B20000010000000000000019 /* PolishPromptBuilder.swift */,
 				B20000010000000000000020 /* PolishOutputSanitizer.swift */,
 				B20000010000000000000021 /* MLPolishService.swift */,
-				B20000010000000000000022 /* DictationInferenceService.swift */,
 				B20000010000000000000023 /* HuggingFaceIntegration.swift */,
 				B20000010000000000000024 /* InferenceSupport.swift */,
+				B20000010000000000000025 /* InferenceEvent.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -157,6 +167,8 @@
 			isa = PBXGroup;
 			children = (
 				B20000010000000000000015 /* AppModels.swift */,
+				B20000010000000000000026 /* AppPaths.swift */,
+				B20000010000000000000027 /* HotkeyDisplay.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -252,9 +264,13 @@
 				B10000010000000000000017 /* PolishPromptBuilder.swift in Sources */,
 				B10000010000000000000018 /* PolishOutputSanitizer.swift in Sources */,
 				B10000010000000000000019 /* MLPolishService.swift in Sources */,
-				B10000010000000000000020 /* DictationInferenceService.swift in Sources */,
 				B10000010000000000000026 /* HuggingFaceIntegration.swift in Sources */,
 				B10000010000000000000027 /* InferenceSupport.swift in Sources */,
+				B10000010000000000000028 /* InferenceEvent.swift in Sources */,
+				B10000010000000000000029 /* AppPaths.swift in Sources */,
+				B10000010000000000000030 /* HotkeyDisplay.swift in Sources */,
+				B10000010000000000000031 /* SettingsWindowController.swift in Sources */,
+				B10000010000000000000032 /* TierSelectionModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
