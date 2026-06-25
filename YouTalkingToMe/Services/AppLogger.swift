@@ -10,7 +10,7 @@ enum AppLogger {
     static let logFileURL = logDirectory.appendingPathComponent("youtalkingtome.log")
 
     private static let queue = DispatchQueue(label: "AppLogger.queue")
-    private static let dateFormatter: ISO8601DateFormatter = {
+    private nonisolated(unsafe) static let dateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter

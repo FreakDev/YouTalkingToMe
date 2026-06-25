@@ -26,7 +26,7 @@ struct InferenceMessage: Decodable {
     }
 }
 
-final class InferenceClient {
+final class InferenceClient: @unchecked Sendable {
     private var process: Process?
     private var inputPipe: Pipe?
     private var outputPipe: Pipe?
@@ -100,7 +100,7 @@ final class InferenceClient {
         }
     }
 
-    func loadModels(tier: ModelTier, onProgress: @escaping (String, String, Double) -> Void) async throws {
+    func loadModels(tier: ModelTier, onProgress: @Sendable @escaping (String, String, Double) -> Void) async throws {
         loadHandler = { message in
             if message.type == "progress", let stage = message.stage, let model = message.model, let percent = message.percent {
                 onProgress(stage, model, percent)
@@ -114,17 +114,15 @@ final class InferenceClient {
         isReady = true
     }
 
-    func transcribeAndPolish(audioURL: URL) async throws -> (raw: String, polished: String) {
+    func transcribe(audioURL: URL) async throws -> String {
         guard isReady else { throw DictationError.inferenceNotReady }
-        AppLogger.info("Sending transcribe_and_polish for \(audioURL.lastPathComponent)")
+        AppLogger.info("Sending transcribe for \(audioURL.lastPathComponent)")
         let message = try await send(
-            command: "transcribe_and_polish",
+            command: "transcribe",
             payload: ["audio_path": audioURL.path],
             timeout: 120
         )
-        let raw = message.rawText ?? ""
-        let polished = message.text ?? ""
-        return (raw, polished)
+        return message.text ?? ""
     }
 
     private func send(command: String, payload: [String: Any] = [:], timeout: TimeInterval = 300) async throws -> InferenceMessage {

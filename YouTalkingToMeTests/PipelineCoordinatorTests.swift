@@ -133,7 +133,7 @@ final class PipelineCoordinatorTests: XCTestCase {
     }
 }
 
-private final class MockInferenceClient: InferenceServing {
+private final class MockInferenceClient: InferenceServing, @unchecked Sendable {
     var result: (raw: String, polished: String) = (raw: "x", polished: "X")
     var didTranscribe = false
     var error: Error?

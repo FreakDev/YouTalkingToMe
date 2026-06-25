@@ -3,52 +3,47 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_NAME="YouTalkingToMe"
-BUILD_DIR="${ROOT_DIR}/.build/release"
 APP_DIR="${ROOT_DIR}/dist/${APP_NAME}.app"
-CONTENTS="${APP_DIR}/Contents"
-MACOS="${CONTENTS}/MacOS"
-RESOURCES="${CONTENTS}/Resources"
+DERIVED_DATA="${ROOT_DIR}/.derivedData"
+XCODE_APP="${DERIVED_DATA}/Build/Products/Release/${APP_NAME}.app"
+ENTITLEMENTS="${ROOT_DIR}/YouTalkingToMe/Resources/YouTalkingToMe.entitlements"
 
-echo "Building Swift release binary..."
-cd "${ROOT_DIR}"
-swift build -c release
-
-echo "Creating app bundle at ${APP_DIR}"
-rm -rf "${APP_DIR}"
-mkdir -p "${MACOS}" "${RESOURCES}"
-
-cp "${BUILD_DIR}/${APP_NAME}" "${MACOS}/${APP_NAME}"
-cp "${ROOT_DIR}/YouTalkingToMe/Resources/Info.plist" "${CONTENTS}/Info.plist"
-cp "${ROOT_DIR}/YouTalkingToMe/Resources/YouTalkingToMe.entitlements" "${CONTENTS}/YouTalkingToMe.entitlements"
-if [[ -f "${ROOT_DIR}/YouTalkingToMe/Resources/AppIcon.icns" ]]; then
-  cp "${ROOT_DIR}/YouTalkingToMe/Resources/AppIcon.icns" "${RESOURCES}/AppIcon.icns"
-else
-  echo "Warning: YouTalkingToMe/Resources/AppIcon.icns not found — app will use the default icon."
+if [[ ! -x "${ROOT_DIR}/inference/.venv/bin/python" ]]; then
+  echo "Python venv missing. Run ./scripts/bundle-python.sh first."
+  exit 1
 fi
 
-echo "Copying inference helper..."
-mkdir -p "${RESOURCES}/inference"
-rsync -a \
-  --exclude='/.pytest_cache/' \
-  --exclude='/tests/' \
-  --exclude='__pycache__/' \
-  --exclude='*.pyc' \
-  --exclude='*.pyo' \
-  --exclude='.venv/lib/python*/site-packages/torch/' \
-  --exclude='.venv/lib/python*/site-packages/torchgen/' \
-  --exclude='.venv/lib/python*/site-packages/sympy/' \
-  --exclude='.venv/lib/python*/site-packages/networkx/' \
-  "${ROOT_DIR}/inference/" "${RESOURCES}/inference/"
+echo "Building Release app with Xcode (required for MLX metallib bundle)..."
+xcodebuild \
+  -project "${ROOT_DIR}/YouTalkingToMe.xcodeproj" \
+  -scheme "${APP_NAME}" \
+  -configuration Release \
+  -destination "platform=macOS" \
+  -derivedDataPath "${DERIVED_DATA}" \
+  -skipMacroValidation \
+  build
+
+if [[ ! -d "${XCODE_APP}" ]]; then
+  echo "Expected app bundle not found at ${XCODE_APP}"
+  exit 1
+fi
+
+METALLIB="${XCODE_APP}/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib"
+if [[ ! -f "${METALLIB}" ]]; then
+  echo "Missing MLX default.metallib — polish inference will crash at launch."
+  exit 1
+fi
+
+echo "Copying app bundle to ${APP_DIR}"
+rm -rf "${APP_DIR}"
+cp -R "${XCODE_APP}" "${APP_DIR}"
 
 echo "Pruning bundled Python venv..."
 chmod +x "${ROOT_DIR}/scripts/prune-inference-venv.sh"
-"${ROOT_DIR}/scripts/prune-inference-venv.sh" "${RESOURCES}/inference/.venv"
-find "${RESOURCES}/inference" -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-find "${RESOURCES}/inference" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete 2>/dev/null || true
+"${ROOT_DIR}/scripts/prune-inference-venv.sh" "${APP_DIR}/Contents/Resources/inference/.venv"
+find "${APP_DIR}/Contents/Resources/inference" -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+find "${APP_DIR}/Contents/Resources/inference" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete 2>/dev/null || true
 
-chmod +x "${MACOS}/${APP_NAME}"
-
-ENTITLEMENTS="${ROOT_DIR}/YouTalkingToMe/Resources/YouTalkingToMe.entitlements"
 echo "Signing app with microphone entitlement..."
 codesign --force --deep --sign - --entitlements "${ENTITLEMENTS}" --options runtime "${APP_DIR}"
 

@@ -22,6 +22,16 @@
 		B10000010000000000000014 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000014 /* SettingsStore.swift */; };
 		B10000010000000000000015 /* AppModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000015 /* AppModels.swift */; };
 		B10000010000000000000016 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000018 /* AppLogger.swift */; };
+		B10000010000000000000017 /* PolishPromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000019 /* PolishPromptBuilder.swift */; };
+		B10000010000000000000018 /* PolishOutputSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000020 /* PolishOutputSanitizer.swift */; };
+		B10000010000000000000019 /* MLPolishService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000021 /* MLPolishService.swift */; };
+		B10000010000000000000020 /* DictationInferenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000022 /* DictationInferenceService.swift */; };
+		B10000010000000000000026 /* HuggingFaceIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000023 /* HuggingFaceIntegration.swift */; };
+		B10000010000000000000027 /* InferenceSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000024 /* InferenceSupport.swift */; };
+		B10000010000000000000021 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = C10000010000000000000001 /* MLXLLM */; };
+		B10000010000000000000022 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = C10000010000000000000002 /* MLXLMCommon */; };
+		B10000010000000000000024 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C10000010000000000000004 /* HuggingFace */; };
+		B10000010000000000000025 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = C10000010000000000000005 /* Tokenizers */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +52,12 @@
 		B20000010000000000000016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B20000010000000000000017 /* YouTalkingToMe.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YouTalkingToMe.entitlements; sourceTree = "<group>"; };
 		B20000010000000000000018 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		B20000010000000000000019 /* PolishPromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishPromptBuilder.swift; sourceTree = "<group>"; };
+		B20000010000000000000020 /* PolishOutputSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishOutputSanitizer.swift; sourceTree = "<group>"; };
+		B20000010000000000000021 /* MLPolishService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLPolishService.swift; sourceTree = "<group>"; };
+		B20000010000000000000022 /* DictationInferenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationInferenceService.swift; sourceTree = "<group>"; };
+		B20000010000000000000023 /* HuggingFaceIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HuggingFaceIntegration.swift; sourceTree = "<group>"; };
+		B20000010000000000000024 /* InferenceSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceSupport.swift; sourceTree = "<group>"; };
 		B30000010000000000000001 /* YouTalkingToMe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YouTalkingToMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -50,6 +66,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B10000010000000000000021 /* MLXLLM in Frameworks */,
+				B10000010000000000000022 /* MLXLMCommon in Frameworks */,
+				B10000010000000000000024 /* HuggingFace in Frameworks */,
+				B10000010000000000000025 /* Tokenizers in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -123,6 +143,12 @@
 				B20000010000000000000013 /* InferenceClient.swift */,
 				B20000010000000000000014 /* SettingsStore.swift */,
 				B20000010000000000000018 /* AppLogger.swift */,
+				B20000010000000000000019 /* PolishPromptBuilder.swift */,
+				B20000010000000000000020 /* PolishOutputSanitizer.swift */,
+				B20000010000000000000021 /* MLPolishService.swift */,
+				B20000010000000000000022 /* DictationInferenceService.swift */,
+				B20000010000000000000023 /* HuggingFaceIntegration.swift */,
+				B20000010000000000000024 /* InferenceSupport.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -160,6 +186,12 @@
 			dependencies = (
 			);
 			name = YouTalkingToMe;
+			packageProductDependencies = (
+				C10000010000000000000001 /* MLXLLM */,
+				C10000010000000000000002 /* MLXLMCommon */,
+				C10000010000000000000004 /* HuggingFace */,
+				C10000010000000000000005 /* Tokenizers */,
+			);
 			productName = YouTalkingToMe;
 			productReference = B30000010000000000000001 /* YouTalkingToMe.app */;
 			productType = "com.apple.product-type.application";
@@ -183,6 +215,11 @@
 				Base,
 			);
 			mainGroup = B50000010000000000000001;
+			packageReferences = (
+				C20000010000000000000001 /* mlx-swift-lm */,
+				C20000010000000000000002 /* swift-huggingface */,
+				C20000010000000000000003 /* swift-transformers */,
+			);
 			productRefGroup = B50000010000000000000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -212,6 +249,12 @@
 				B10000010000000000000014 /* SettingsStore.swift in Sources */,
 				B10000010000000000000015 /* AppModels.swift in Sources */,
 				B10000010000000000000016 /* AppLogger.swift in Sources */,
+				B10000010000000000000017 /* PolishPromptBuilder.swift in Sources */,
+				B10000010000000000000018 /* PolishOutputSanitizer.swift in Sources */,
+				B10000010000000000000019 /* MLPolishService.swift in Sources */,
+				B10000010000000000000020 /* DictationInferenceService.swift in Sources */,
+				B10000010000000000000026 /* HuggingFaceIntegration.swift in Sources */,
+				B10000010000000000000027 /* InferenceSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,7 +332,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.youtalkingtome.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -312,7 +356,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.youtalkingtome.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -338,6 +383,56 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C20000010000000000000001 /* mlx-swift-lm */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.31.3;
+			};
+		};
+		C20000010000000000000002 /* swift-huggingface */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-huggingface";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.0;
+			};
+		};
+		C20000010000000000000003 /* swift-transformers */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-transformers";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C10000010000000000000001 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C20000010000000000000001 /* mlx-swift-lm */;
+			productName = MLXLLM;
+		};
+		C10000010000000000000002 /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C20000010000000000000001 /* mlx-swift-lm */;
+			productName = MLXLMCommon;
+		};
+		C10000010000000000000004 /* HuggingFace */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C20000010000000000000002 /* swift-huggingface */;
+			productName = HuggingFace;
+		};
+		C10000010000000000000005 /* Tokenizers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C20000010000000000000003 /* swift-transformers */;
+			productName = Tokenizers;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B90000010000000000000001 /* Project object */;
 }

@@ -40,11 +40,9 @@ enum InferenceDirectoryResolver {
     }
 }
 
-protocol InferenceServing: AnyObject {
+protocol InferenceServing: AnyObject, Sendable {
     func transcribeAndPolish(audioURL: URL) async throws -> (raw: String, polished: String)
 }
-
-extension InferenceClient: InferenceServing {}
 
 protocol AudioCapturing: AnyObject {
     func start() throws

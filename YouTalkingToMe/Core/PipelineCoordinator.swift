@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class PipelineCoordinator: ObservableObject {
     private static let errorDisplayDuration: TimeInterval = 8
 

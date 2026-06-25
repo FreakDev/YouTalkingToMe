@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
 
@@ -36,7 +34,6 @@ def test_load_models_progress_and_result(inference_server, monkeypatch):
         "server.download_model",
         lambda repo, cache_dir: f"/fake/{repo.split('/')[-1]}",
     )
-    server.polish_engine.load = MagicMock()
 
     server.handle({"command": "load_models", "tier": "fast"})
 
@@ -45,18 +42,13 @@ def test_load_models_progress_and_result(inference_server, monkeypatch):
     assert outputs[1]["type"] == "progress"
     assert outputs[1]["stage"] == "download_stt"
     assert outputs[1]["percent"] == 1
-    assert outputs[2]["type"] == "progress"
-    assert outputs[2]["stage"] == "download_polish"
-    assert outputs[3]["type"] == "progress"
-    assert outputs[3]["stage"] == "download_polish"
-    assert outputs[3]["percent"] == 1
     assert outputs[-1]["type"] == "result"
     assert outputs[-1]["command"] == "load_models"
     assert outputs[-1]["tier"] == "fast"
-    server.polish_engine.load.assert_called_once()
+    assert "polish_path" not in outputs[-1]
 
 
-def test_transcribe_without_models(inference_server, monkeypatch, tmp_path, wav_mono_16k):
+def test_transcribe_without_models(inference_server, monkeypatch, wav_mono_16k):
     server, outputs = inference_server
 
     def _fail_transcribe(audio_path, model_repo):
@@ -71,17 +63,15 @@ def test_transcribe_without_models(inference_server, monkeypatch, tmp_path, wav_
     assert "model not loaded" in outputs[0]["message"]
 
 
-def test_transcribe_and_polish_success(inference_server, monkeypatch, wav_mono_16k):
+def test_transcribe_success(inference_server, monkeypatch, wav_mono_16k):
     server, outputs = inference_server
 
     monkeypatch.setattr("server.transcribe", lambda audio_path, model_repo: "bonjour")
-    server.polish_engine.polish = MagicMock(return_value="Bonjour.")
 
-    server.handle({"command": "transcribe_and_polish", "audio_path": str(wav_mono_16k)})
+    server.handle({"command": "transcribe", "audio_path": str(wav_mono_16k)})
 
     assert outputs[-1] == {
         "type": "result",
-        "command": "transcribe_and_polish",
-        "raw_text": "bonjour",
-        "text": "Bonjour.",
+        "command": "transcribe",
+        "text": "bonjour",
     }

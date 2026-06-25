@@ -22,8 +22,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settingsStore = SettingsStore()
         let permissionsManager = PermissionsManager()
         let inferenceClient = InferenceClient()
-        let modelManager = ModelManager(inferenceClient: inferenceClient)
-        let pipeline = PipelineCoordinator(inferenceClient: inferenceClient, settingsStore: settingsStore)
+        let polishService = MLPolishService.shared
+        let dictationInference = DictationInferenceService(
+            sttClient: inferenceClient,
+            polishService: polishService
+        )
+        let modelManager = ModelManager(
+            inferenceClient: inferenceClient,
+            polishService: polishService
+        )
+        let pipeline = PipelineCoordinator(
+            inferenceClient: dictationInference,
+            settingsStore: settingsStore
+        )
 
         menubarController = MenubarController(
             settingsStore: settingsStore,

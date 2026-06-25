@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class ModelManager: ObservableObject {
     @Published var downloadProgress: Double = 0
     @Published var downloadStage: String = ""
@@ -8,10 +9,12 @@ final class ModelManager: ObservableObject {
     @Published private(set) var tierStatuses: [TierInstallStatus] = []
 
     private let inferenceClient: InferenceClient
+    private let polishService: MLPolishService
     private var loadedTier: ModelTier?
 
-    init(inferenceClient: InferenceClient) {
+    init(inferenceClient: InferenceClient, polishService: MLPolishService) {
         self.inferenceClient = inferenceClient
+        self.polishService = polishService
         refreshModelStatuses()
     }
 
@@ -26,32 +29,33 @@ final class ModelManager: ObservableObject {
             return
         }
 
-        await MainActor.run {
-            isDownloading = true
-            downloadProgress = 0
-            downloadStage = "Préparation..."
-        }
+        isDownloading = true
+        downloadProgress = 0
+        downloadStage = "Préparation..."
 
         do {
-            try await inferenceClient.loadModels(tier: tier) { [weak self] stage, model, percent in
-                DispatchQueue.main.async {
+            try await inferenceClient.loadModels(tier: tier) { stage, model, percent in
+                Task { @MainActor [weak self] in
                     self?.downloadStage = "\(stage): \(model)"
-                    self?.downloadProgress = percent
+                    self?.downloadProgress = percent * 0.5
                 }
             }
 
-            await MainActor.run {
-                loadedTier = tier
-                isReady = true
-                downloadProgress = 1
-                downloadStage = "Prêt"
-                isDownloading = false
-                refreshModelStatuses()
+            try await polishService.loadModel(tier: tier) { stage, model, percent in
+                Task { @MainActor [weak self] in
+                    self?.downloadStage = "\(stage): \(model)"
+                    self?.downloadProgress = 0.5 + (percent * 0.5)
+                }
             }
+
+            downloadProgress = 1
+            downloadStage = "Prêt"
+            isDownloading = false
+            loadedTier = tier
+            isReady = true
+            refreshModelStatuses()
         } catch {
-            await MainActor.run {
-                isDownloading = false
-            }
+            isDownloading = false
             throw error
         }
     }
@@ -103,11 +107,12 @@ final class ModelManager: ObservableObject {
         if tier == activeTier {
             isReady = false
             loadedTier = nil
+            polishService.unload()
         }
         refreshModelStatuses()
     }
 
-    static func cacheDirectoryName(for repo: String) -> String {
+    nonisolated static func cacheDirectoryName(for repo: String) -> String {
         "models--" + repo.replacingOccurrences(of: "/", with: "--")
     }
 

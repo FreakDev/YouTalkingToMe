@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import IOKit
 
-final class HotkeyManager {
+final class HotkeyManager: @unchecked Sendable {
     var onPress: (() -> Void)?
     var onRelease: (() -> Void)?
 

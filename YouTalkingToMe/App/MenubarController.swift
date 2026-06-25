@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import SwiftUI
 
+@MainActor
 final class MenubarController: NSObject, NSWindowDelegate {
     private let settingsStore: SettingsStore
     private let permissionsManager: PermissionsManager
@@ -83,18 +84,22 @@ final class MenubarController: NSObject, NSWindowDelegate {
             keyCode: settingsStore.settings.hotkeyKeyCode
         )
         manager.onPress = { [weak self] in
-            guard let self else { return }
-            if self.modelManager.isDownloading {
-                self.pipeline.showUserMessage(
-                    "Téléchargement des modèles en cours, veuillez réessayer dans quelques instants."
-                )
-                return
+            Task { @MainActor in
+                guard let self else { return }
+                if self.modelManager.isDownloading {
+                    self.pipeline.showUserMessage(
+                        "Téléchargement des modèles en cours, veuillez réessayer dans quelques instants."
+                    )
+                    return
+                }
+                self.pipeline.startDictation()
             }
-            self.pipeline.startDictation()
         }
         manager.onRelease = { [weak self] in
-            guard let self, self.pipeline.overlayState == .listening else { return }
-            self.pipeline.endDictation()
+            Task { @MainActor in
+                guard let self, self.pipeline.overlayState == .listening else { return }
+                self.pipeline.endDictation()
+            }
         }
 
         let started = manager.start()

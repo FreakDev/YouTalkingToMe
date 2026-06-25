@@ -59,7 +59,7 @@ pass "Python cache junk policy"
 BUNDLE_PYTHON="${APP_DIR}/Contents/Resources/inference/.venv/bin/python"
 [[ -x "${BUNDLE_PYTHON}" ]] || fail "Bundled Python not executable"
 export PYTHONDONTWRITEBYTECODE=1
-"${BUNDLE_PYTHON}" -c "import mlx; import mlx_whisper; import mlx_lm" || fail "Bundled Python imports failed"
+"${BUNDLE_PYTHON}" -c "import mlx; import mlx_whisper" || fail "Bundled Python imports failed"
 pass "Bundled Python imports"
 
 # Server ping from bundle
@@ -69,30 +69,7 @@ PING_RESULT="$(
 echo "${PING_RESULT}" | grep -q '"ok": true' || fail "Server ping from bundle failed: ${PING_RESULT}"
 pass "Server ping from bundle"
 
-# Polish model load (requires cached models — catches broken transformers pruning)
-MODELS_CACHE="${HOME}/Library/Application Support/YouTalkingToMe/models"
-if [[ -d "${MODELS_CACHE}" ]] && [[ -n "$(ls -A "${MODELS_CACHE}" 2>/dev/null)" ]]; then
-  TRANSFORMERS_KEEP="$(python3 -c "import json; keep=json.load(open('${BUDGET_FILE}')).get('transformers_models_keep', []); print('set' if keep else '')")"
-  if [[ -n "${TRANSFORMERS_KEEP}" ]]; then
-    fail "transformers_models_keep is configured — this breaks AutoTokenizer in the bundle"
-  fi
-  POLISH_LOAD_RESULT="$(
-    "${BUNDLE_PYTHON}" -c "
-from pathlib import Path
-from huggingface_hub import snapshot_download
-from mlx_lm import load
-
-cache = Path.home() / 'Library/Application Support/YouTalkingToMe/models'
-path = snapshot_download('mlx-community/gemma-4-e2b-it-4bit', cache_dir=str(cache))
-model, tokenizer = load(path)
-assert model is not None and tokenizer is not None
-print('ok')
-" 2>&1
-  )" || fail "Bundled polish model load failed: ${POLISH_LOAD_RESULT}"
-  pass "Bundled polish model load"
-else
-  echo "SKIP: Bundled polish model load (models not cached locally)"
-fi
+echo "SKIP: Polish model load (handled in Swift via mlx-swift-lm)"
 
 # Code signature
 codesign -dv "${APP_DIR}" >/dev/null 2>&1 || fail "codesign verification failed"

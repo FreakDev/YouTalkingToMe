@@ -1,4 +1,4 @@
-"""JSON-line IPC server for You Talking To Me inference."""
+"""JSON-line IPC server for You Talking To Me STT inference."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ import traceback
 from pathlib import Path
 
 from huggingface_hub import snapshot_download
-from polish import PolishEngine
 from stt import transcribe
 
 MODELS_CONFIG = Path(__file__).parent / "models.json"
@@ -34,7 +33,6 @@ class InferenceServer:
         self.tiers = load_tiers()
         self.cache_dir = str(Path.home() / "Library" / "Application Support" / "YouTalkingToMe" / "models")
         self.current_tier = "fast"
-        self.polish_engine = PolishEngine()
         self.stt_model_path: str | None = None
 
     def handle(self, message: dict) -> None:
@@ -48,22 +46,6 @@ class InferenceServer:
                 audio_path = message.get("audio_path", "")
                 text = transcribe(audio_path, self._stt_model())
                 emit({"type": "result", "command": "transcribe", "text": text})
-            elif command == "polish":
-                raw = message.get("text", "")
-                polished = self.polish_engine.polish(raw)
-                emit({"type": "result", "command": "polish", "text": polished})
-            elif command == "transcribe_and_polish":
-                audio_path = message.get("audio_path", "")
-                raw = transcribe(audio_path, self._stt_model())
-                polished = self.polish_engine.polish(raw)
-                emit(
-                    {
-                        "type": "result",
-                        "command": "transcribe_and_polish",
-                        "raw_text": raw,
-                        "text": polished,
-                    }
-                )
             else:
                 emit({"type": "error", "message": f"Unknown command: {command}"})
         except Exception as exc:  # noqa: BLE001
@@ -72,10 +54,6 @@ class InferenceServer:
     def _stt_repo(self) -> str:
         tier = self.tiers.get(self.current_tier, self.tiers["fast"])
         return tier["stt"]
-
-    def _polish_repo(self) -> str:
-        tier = self.tiers.get(self.current_tier, self.tiers["fast"])
-        return tier["polish"]
 
     def _stt_model(self) -> str:
         if self.stt_model_path:
@@ -88,18 +66,12 @@ class InferenceServer:
 
         self.current_tier = tier
         stt_repo = self._stt_repo()
-        polish_repo = self._polish_repo()
 
         emit({"type": "progress", "stage": "download_stt", "model": stt_repo, "percent": 0})
         stt_path = download_model(stt_repo, self.cache_dir)
         emit({"type": "progress", "stage": "download_stt", "model": stt_repo, "percent": 1})
 
-        emit({"type": "progress", "stage": "download_polish", "model": polish_repo, "percent": 0})
-        polish_path = download_model(polish_repo, self.cache_dir)
-        emit({"type": "progress", "stage": "download_polish", "model": polish_repo, "percent": 1})
-
         self.stt_model_path = stt_path
-        self.polish_engine.load(polish_path)
 
         emit(
             {
@@ -107,7 +79,6 @@ class InferenceServer:
                 "command": "load_models",
                 "tier": tier,
                 "stt_path": stt_path,
-                "polish_path": polish_path,
             }
         )
 

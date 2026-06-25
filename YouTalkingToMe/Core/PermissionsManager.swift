@@ -1,5 +1,5 @@
 import AppKit
-import ApplicationServices
+@preconcurrency import ApplicationServices
 import AVFoundation
 import Foundation
 import IOKit
@@ -8,6 +8,7 @@ extension Notification.Name {
     static let retryHotkeySetup = Notification.Name("YouTalkingToMe.retryHotkeySetup")
 }
 
+@MainActor
 final class PermissionsManager: ObservableObject {
     @Published var microphoneGranted = false
     @Published var accessibilityGranted = false
@@ -30,8 +31,10 @@ final class PermissionsManager: ObservableObject {
     }
 
     deinit {
-        if let activeObserver {
-            NotificationCenter.default.removeObserver(activeObserver)
+        MainActor.assumeIsolated {
+            if let activeObserver {
+                NotificationCenter.default.removeObserver(activeObserver)
+            }
         }
     }
 

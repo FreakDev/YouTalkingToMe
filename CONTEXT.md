@@ -18,4 +18,8 @@ A named preset pairing an STT model and a polish model. The two tiers are **fast
 
 ## InferenceServer
 
-The bundled Python MLX helper process that performs local transcription and polish. Communicates with the Swift app via JSON lines on stdin/stdout.
+The bundled Python MLX helper process that performs local speech-to-text (Whisper). Communicates with the Swift app via JSON lines on stdin/stdout.
+
+## MLPolishService
+
+Swift-side MLX service that downloads and runs the Gemma 4 polish model via `mlx-swift-lm`. Transforms raw transcripts into clean dictation text.
