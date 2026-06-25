@@ -19,7 +19,7 @@ final class SettingsStoreTests: XCTestCase {
 
     func testDefaultSettings() {
         let store = SettingsStore(defaults: defaults)
-        XCTAssertEqual(store.settings.tier, .fast)
+        XCTAssertEqual(store.settings.tier, .quality)
         XCTAssertEqual(store.settings.hotkeyModifiers, AppSettings.default.hotkeyModifiers)
         XCTAssertEqual(store.settings.hotkeyKeyCode, AppSettings.default.hotkeyKeyCode)
         XCTAssertFalse(store.settings.hasCompletedOnboarding)

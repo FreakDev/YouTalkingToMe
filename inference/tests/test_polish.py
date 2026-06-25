@@ -6,7 +6,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from polish import POLISH_SYSTEM, PolishEngine, _strip_wrapping_quotes, _wrap_dictation_input
+from polish import (
+    POLISH_SYSTEM,
+    PolishEngine,
+    _strip_thinking_channels,
+    _strip_wrapping_quotes,
+    _wrap_dictation_input,
+)
 
 
 def test_polish_empty_string():
@@ -25,11 +31,16 @@ def test_load_is_idempotent():
     mock_model = object()
     mock_tokenizer = MagicMock()
 
-    with patch("mlx_lm.load", return_value=(mock_model, mock_tokenizer)) as load_mock:
+    with (
+        patch("mlx_lm.utils.load_model", return_value=(mock_model, {})) as load_model_mock,
+        patch("mlx_lm.utils.load_tokenizer", return_value=mock_tokenizer) as load_tokenizer_mock,
+    ):
         engine.load("/models/a")
         engine.load("/models/a")
 
-    load_mock.assert_called_once_with("/models/a")
+    load_model_mock.assert_called_once()
+    assert load_model_mock.call_args.kwargs["strict"] is False
+    load_tokenizer_mock.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -55,6 +66,24 @@ def test_wrap_dictation_input_framing():
     assert "do not answer" in wrapped.lower()
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (
+            "<|channel>thought\nLet me clean this up.\n<channel|>Bonjour.",
+            "Bonjour.",
+        ),
+        (
+            "<|channel>thought\nHmm...\n<channel|><|channel>content\nBonjour.\n<channel|>",
+            "Bonjour.",
+        ),
+        ("Bonjour.", "Bonjour."),
+    ],
+)
+def test_strip_thinking_channels(raw, expected):
+    assert _strip_thinking_channels(raw) == expected
+
+
 def test_polish_uses_chat_template():
     engine = PolishEngine()
     engine._model = object()
@@ -71,6 +100,9 @@ def test_polish_uses_chat_template():
     assert messages[0]["role"] == "system"
     assert messages[0]["content"] == POLISH_SYSTEM
     assert messages[1]["content"] == _wrap_dictation_input("euh bonjour")
+    assert mock_tokenizer.apply_chat_template.call_args.kwargs["chat_template_kwargs"] == {
+        "enable_thinking": False,
+    }
     generate_mock.assert_called_once()
 
 

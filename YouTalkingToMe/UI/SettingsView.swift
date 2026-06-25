@@ -10,6 +10,8 @@ struct SettingsView: View {
     @State private var isReloading = false
     @State private var errorMessage: String?
     @State private var tierPendingDeletion: ModelTier?
+    @State private var tierPendingDownload: ModelTier?
+    @State private var isRevertingTierSelection = false
 
     init(
         settingsStore: SettingsStore,
@@ -25,9 +27,6 @@ struct SettingsView: View {
     var body: some View {
         Form {
             dictationSection
-            if !permissions.allGranted {
-                permissionsSetupSection
-            }
             permissionsSection
             modelsSection
 
@@ -69,6 +68,34 @@ struct SettingsView: View {
                 Text("Les modèles \(tier.bundledModelsDescription) seront retirés de votre Mac.")
             }
         }
+        .confirmationDialog(
+            "Télécharger les modèles ?",
+            isPresented: Binding(
+                get: { tierPendingDownload != nil },
+                set: { if !$0 { tierPendingDownload = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Télécharger") {
+                if let tier = tierPendingDownload {
+                    reloadModels(for: tier)
+                }
+                tierPendingDownload = nil
+            }
+            Button("Annuler", role: .cancel) {
+                isRevertingTierSelection = true
+                selectedTier = settingsStore.settings.tier
+                tierPendingDownload = nil
+            }
+        } message: {
+            if let tier = tierPendingDownload {
+                Text("Les modèles \(tier.bundledModelsDescription) ne sont pas installés sur votre Mac.")
+            }
+        }
+    }
+
+    private var selectedTierIsAbsent: Bool {
+        selectedTierStatus?.isFullyInstalled != true && !isDownloadingFromNetwork
     }
 
     private var selectedTierStatus: TierInstallStatus? {
@@ -79,27 +106,12 @@ struct SettingsView: View {
         isReloading || modelManager.isDownloading
     }
 
-    private var qualityStatusLabel: String? {
-        if isLoadingSelectedTier {
-            return "Téléchargement des modèles"
-        }
-        guard selectedTierStatus?.isFullyInstalled == true else { return nil }
-        if selectedTier == settingsStore.settings.tier, modelManager.isReady {
-            return "Modèles prêts"
-        }
-        if selectedTier != settingsStore.settings.tier {
-            return "Modèles prêts"
-        }
-        return nil
+    private var isDownloadingFromNetwork: Bool {
+        isLoadingSelectedTier && selectedTierStatus?.isFullyInstalled != true
     }
 
-    @ViewBuilder
-    private var permissionsSetupSection: some View {
-        Section {
-            Text("Autorisez les permissions ci-dessous pour activer la dictée vocale push-to-talk dans toutes vos apps.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
+    private var showsDownloadProgress: Bool {
+        isDownloadingFromNetwork
     }
 
     @ViewBuilder
@@ -109,8 +121,18 @@ struct SettingsView: View {
                 Text("Option + Space")
                     .foregroundStyle(.secondary)
             }
-            LabeledContent("Qualité") {
+            LabeledContent("Qualité optimale") {
                 HStack(spacing: 12) {
+                    if isDownloadingFromNetwork {
+                        Text("Téléchargement des modèles")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    } else if selectedTierIsAbsent {
+                        Text("Modèle absent")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
                     Picker("", selection: $selectedTier) {
                         ForEach(ModelTier.allCases) { tier in
                             Text(tier.displayName).tag(tier)
@@ -118,16 +140,14 @@ struct SettingsView: View {
                     }
                     .labelsHidden()
                     .fixedSize()
-
-                    if let qualityStatusLabel {
-                        Text(qualityStatusLabel)
-                            .font(.caption)
-                            .foregroundStyle(isLoadingSelectedTier ? .orange : .green)
-                    }
                 }
             }
             .onChange(of: selectedTier) { _, newValue in
-                reloadModels(for: newValue)
+                if isRevertingTierSelection {
+                    isRevertingTierSelection = false
+                    return
+                }
+                handleTierSelectionChange(newValue)
             }
         }
     }
@@ -138,7 +158,7 @@ struct SettingsView: View {
             ForEach(modelManager.tierStatuses) { status in
                 tierRow(status)
             }
-            if isReloading || modelManager.isDownloading {
+            if showsDownloadProgress {
                 ProgressView(value: modelManager.downloadProgress) {
                     Text(modelManager.downloadStage)
                 }
@@ -148,7 +168,12 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var permissionsSection: some View {
-        Section("Permissions") {
+        Section {
+            if !permissions.allGranted {
+                Text("Autorisez les permissions ci-dessous pour activer la dictée vocale push-to-talk dans toutes vos apps.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
             permissionRow(
                 title: "Microphone",
                 granted: permissions.microphoneGranted,
@@ -163,7 +188,7 @@ struct SettingsView: View {
             )
             permissionRow(
                 title: "Surveillance entrées",
-                granted: permissions.inputMonitoringGranted,
+                granted: permissions.inputMonitoringGranted || permissions.hotkeyOperational,
                 action: permissions.requestInputMonitoring,
                 settingsAction: permissions.openInputMonitoringSettings
             )
@@ -175,6 +200,8 @@ struct SettingsView: View {
             Button("Vérifier les permissions") {
                 permissions.refresh()
             }
+        } header: {
+            Text("Permissions")
         }
     }
 
@@ -188,12 +215,26 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text(status.statusLabel)
-                .font(.caption)
-                .foregroundStyle(status.isFullyInstalled ? .green : (status.hasAnyInstalled ? .orange : .secondary))
-            if status.hasAnyInstalled {
+            if status.isFullyInstalled {
+                Text("Téléchargé")
+                    .font(.caption)
+                    .foregroundStyle(.green)
                 Button("Supprimer") {
                     tierPendingDeletion = status.tier
+                }
+            } else if status.hasAnyInstalled {
+                Text("Partiel")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                Button("Télécharger") {
+                    reloadModels(for: status.tier)
+                }
+                Button("Supprimer") {
+                    tierPendingDeletion = status.tier
+                }
+            } else {
+                Button("Télécharger") {
+                    reloadModels(for: status.tier)
                 }
             }
         }
@@ -218,7 +259,17 @@ struct SettingsView: View {
         }
     }
 
+    private func handleTierSelectionChange(_ tier: ModelTier) {
+        let status = modelManager.tierStatuses.first { $0.tier == tier }
+        if status?.isFullyInstalled == true {
+            reloadModels(for: tier)
+        } else {
+            tierPendingDownload = tier
+        }
+    }
+
     private func reloadModels(for tier: ModelTier) {
+        selectedTier = tier
         settingsStore.settings.tier = tier
         settingsStore.save()
         isReloading = true

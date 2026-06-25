@@ -17,7 +17,6 @@
 		B10000010000000000000008 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000008 /* OverlayPanel.swift */; };
 		B10000010000000000000009 /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000009 /* OverlayView.swift */; };
 		B10000010000000000000010 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000010 /* SettingsView.swift */; };
-		B10000010000000000000011 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000011 /* OnboardingView.swift */; };
 		B10000010000000000000012 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000012 /* ModelManager.swift */; };
 		B10000010000000000000013 /* InferenceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000013 /* InferenceClient.swift */; };
 		B10000010000000000000014 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000014 /* SettingsStore.swift */; };
@@ -36,7 +35,6 @@
 		B20000010000000000000008 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
 		B20000010000000000000009 /* OverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayView.swift; sourceTree = "<group>"; };
 		B20000010000000000000010 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		B20000010000000000000011 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		B20000010000000000000012 /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
 		B20000010000000000000013 /* InferenceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceClient.swift; sourceTree = "<group>"; };
 		B20000010000000000000014 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
@@ -114,7 +112,6 @@
 				B20000010000000000000008 /* OverlayPanel.swift */,
 				B20000010000000000000009 /* OverlayView.swift */,
 				B20000010000000000000010 /* SettingsView.swift */,
-				B20000010000000000000011 /* OnboardingView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -210,7 +207,6 @@
 				B10000010000000000000008 /* OverlayPanel.swift in Sources */,
 				B10000010000000000000009 /* OverlayView.swift in Sources */,
 				B10000010000000000000010 /* SettingsView.swift in Sources */,
-				B10000010000000000000011 /* OnboardingView.swift in Sources */,
 				B10000010000000000000012 /* ModelManager.swift in Sources */,
 				B10000010000000000000013 /* InferenceClient.swift in Sources */,
 				B10000010000000000000014 /* SettingsStore.swift in Sources */,

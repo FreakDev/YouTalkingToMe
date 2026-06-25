@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import IOKit
 
 final class HotkeyManager {
     var onPress: (() -> Void)?
@@ -25,8 +26,9 @@ final class HotkeyManager {
 
     func start() -> Bool {
         if #available(macOS 10.15, *) {
+            _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
             if !CGPreflightListenEventAccess() {
-                CGRequestListenEventAccess()
+                _ = CGRequestListenEventAccess()
             }
         }
 

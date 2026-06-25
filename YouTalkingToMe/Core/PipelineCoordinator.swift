@@ -32,6 +32,13 @@ final class PipelineCoordinator: ObservableObject {
         }
     }
 
+    func showUserMessage(_ message: String) {
+        Task { @MainActor in
+            overlayState = .error(message)
+            scheduleErrorDismiss()
+        }
+    }
+
     func endDictation() {
         overlayState = .processing
         AppLogger.info("Dictation ended, processing...")

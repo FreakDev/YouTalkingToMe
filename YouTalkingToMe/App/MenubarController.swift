@@ -2,7 +2,7 @@ import AppKit
 import Combine
 import SwiftUI
 
-final class MenubarController: NSObject {
+final class MenubarController: NSObject, NSWindowDelegate {
     private let settingsStore: SettingsStore
     private let permissionsManager: PermissionsManager
     private let modelManager: ModelManager
@@ -12,8 +12,8 @@ final class MenubarController: NSObject {
     private var statusItem: NSStatusItem?
     private var hotkeyManager: HotkeyManager?
     private let overlayController = OverlayPanelController()
-    private var onboardingWindow: NSWindow?
     private var settingsWindow: NSWindow?
+    private var isSettingsPanelOpen = false
 
     init(
         settingsStore: SettingsStore,
@@ -32,19 +32,25 @@ final class MenubarController: NSObject {
 
     func bootstrap() {
         permissionsManager.refresh()
-        permissionsManager.requestMicrophone()
 
         setupStatusItem()
         setupHotkeyIfNeeded()
         observeOverlay()
         observeAppActivation()
+        observeHotkeyRetry()
+
+        if !permissionsManager.allGranted {
+            presentSettings()
+        }
 
         if !settingsStore.settings.hasCompletedOnboarding {
-            showOnboarding()
-        } else {
-            Task(priority: .utility) {
-                try? await modelManager.ensureModels(tier: settingsStore.settings.tier)
-            }
+            settingsStore.settings.tier = .quality
+            settingsStore.settings.hasCompletedOnboarding = true
+            settingsStore.save()
+        }
+
+        Task(priority: .utility) {
+            try? await modelManager.ensureModels(tier: settingsStore.settings.tier)
         }
     }
 
@@ -77,10 +83,18 @@ final class MenubarController: NSObject {
             keyCode: settingsStore.settings.hotkeyKeyCode
         )
         manager.onPress = { [weak self] in
-            self?.pipeline.startDictation()
+            guard let self else { return }
+            if self.modelManager.isDownloading {
+                self.pipeline.showUserMessage(
+                    "Téléchargement des modèles en cours, veuillez réessayer dans quelques instants."
+                )
+                return
+            }
+            self.pipeline.startDictation()
         }
         manager.onRelease = { [weak self] in
-            self?.pipeline.endDictation()
+            guard let self, self.pipeline.overlayState == .listening else { return }
+            self.pipeline.endDictation()
         }
 
         let started = manager.start()
@@ -99,6 +113,21 @@ final class MenubarController: NSObject {
             if self.hotkeyManager?.isOperational != true {
                 self.setupHotkeyIfNeeded()
             }
+            if self.isSettingsPanelOpen, let settingsWindow = self.settingsWindow {
+                NSApp.setActivationPolicy(.regular)
+                settingsWindow.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
+    }
+
+    private func observeHotkeyRetry() {
+        NotificationCenter.default.addObserver(
+            forName: .retryHotkeySetup,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.setupHotkeyIfNeeded()
         }
     }
 
@@ -114,43 +143,50 @@ final class MenubarController: NSObject {
     private var cancellables: Set<AnyCancellable> = []
 
     @objc private func openSettings() {
-        if settingsWindow == nil {
-            let view = SettingsView(
-                settingsStore: settingsStore,
-                modelManager: modelManager,
-                permissions: permissionsManager
-            )
-            let hosting = NSHostingController(rootView: view)
-            let window = NSWindow(contentViewController: hosting)
+        presentSettings()
+    }
+
+    private func presentSettings() {
+        let view = SettingsView(
+            settingsStore: settingsStore,
+            modelManager: modelManager,
+            permissions: permissionsManager
+        )
+        let hosting = NSHostingController(rootView: view)
+
+        let window: NSWindow
+        if let settingsWindow {
+            window = settingsWindow
+            window.contentViewController = hosting
+        } else {
+            window = NSWindow(contentViewController: hosting)
             window.title = "You Talking To Me"
             window.styleMask = [.titled, .closable]
             settingsWindow = window
         }
-        settingsWindow?.makeKeyAndOrderFront(nil)
+
+        configureSettingsWindow(window)
+        isSettingsPanelOpen = true
+        NSApp.setActivationPolicy(.regular)
+        window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func configureSettingsWindow(_ window: NSWindow) {
+        window.isReleasedWhenClosed = false
+        window.hidesOnDeactivate = false
+        window.delegate = self
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow, window === settingsWindow else { return }
+        isSettingsPanelOpen = false
+        settingsWindow = nil
+        NSApp.setActivationPolicy(.accessory)
     }
 
     @objc private func quit() {
         inferenceClient.stop()
         NSApp.terminate(nil)
-    }
-
-    private func showOnboarding() {
-        let view = OnboardingView(
-            permissions: permissionsManager,
-            modelManager: modelManager,
-            settingsStore: settingsStore,
-            onComplete: { [weak self] in
-                self?.onboardingWindow?.close()
-                self?.onboardingWindow = nil
-            }
-        )
-        let hosting = NSHostingController(rootView: view)
-        let window = NSWindow(contentViewController: hosting)
-        window.title = "Configuration"
-        window.styleMask = [.titled, .closable]
-        onboardingWindow = window
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
     }
 }

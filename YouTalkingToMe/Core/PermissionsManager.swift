@@ -2,6 +2,11 @@ import AppKit
 import ApplicationServices
 import AVFoundation
 import Foundation
+import IOKit
+
+extension Notification.Name {
+    static let retryHotkeySetup = Notification.Name("YouTalkingToMe.retryHotkeySetup")
+}
 
 final class PermissionsManager: ObservableObject {
     @Published var microphoneGranted = false
@@ -43,6 +48,10 @@ final class PermissionsManager: ObservableObject {
 
     func setHotkeyOperational(_ operational: Bool) {
         setIfChanged(\.hotkeyOperational, operational)
+        if operational {
+            setIfChanged(\.inputMonitoringGranted, true)
+            setIfChanged(\.restartRequired, false)
+        }
     }
 
     var allGranted: Bool {
@@ -84,11 +93,23 @@ final class PermissionsManager: ObservableObject {
     }
 
     func requestInputMonitoring() {
+        NSApp.activate(ignoringOtherApps: true)
+
         if #available(macOS 10.15, *) {
+            _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+
             if !CGPreflightListenEventAccess() {
-                CGRequestListenEventAccess()
+                _ = CGRequestListenEventAccess()
+            }
+
+            refresh()
+
+            if !checkInputMonitoringPermission() {
+                openInputMonitoringSettings()
             }
         }
+
+        NotificationCenter.default.post(name: .retryHotkeySetup, object: nil)
         scheduleRefresh()
     }
 
@@ -115,6 +136,9 @@ final class PermissionsManager: ObservableObject {
 
     private func checkInputMonitoringPermission() -> Bool {
         if #available(macOS 10.15, *) {
+            if IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted {
+                return true
+            }
             return CGPreflightListenEventAccess()
         }
         return true

@@ -26,6 +26,8 @@
     <true/>
     <key>NSMicrophoneUsageDescription</key>
     <string>You Talking To Me needs microphone access for voice dictation.</string>
+    <key>NSInputMonitoringUsageDescription</key>
+    <string>You Talking To Me needs Input Monitoring to detect the push-to-talk hotkey in all apps.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
 </dict>
