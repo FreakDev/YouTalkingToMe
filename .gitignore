@@ -27,6 +27,7 @@ __pycache__/
 
 # Models cache (downloaded at runtime)
 models/
+!YouTalkingToMe/Models
 
 # Local secrets
 .env
