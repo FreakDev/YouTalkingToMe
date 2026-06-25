@@ -9,8 +9,13 @@ struct SettingsView: View {
     @State private var selectedTier: ModelTier
     @State private var isReloading = false
     @State private var errorMessage: String?
+    @State private var tierPendingDeletion: ModelTier?
 
-    init(settingsStore: SettingsStore, modelManager: ModelManager, permissions: PermissionsManager) {
+    init(
+        settingsStore: SettingsStore,
+        modelManager: ModelManager,
+        permissions: PermissionsManager
+    ) {
         self.settingsStore = settingsStore
         self.modelManager = modelManager
         self.permissions = permissions
@@ -19,64 +24,12 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Dictée") {
-                LabeledContent("Hotkey") {
-                    Text("Option + Space")
-                        .foregroundStyle(.secondary)
-                }
-                Picker("Qualité", selection: $selectedTier) {
-                    ForEach(ModelTier.allCases) { tier in
-                        Text(tier.displayName).tag(tier)
-                    }
-                }
-                .onChange(of: selectedTier) { _, newValue in
-                    reloadModels(for: newValue)
-                }
+            dictationSection
+            if !permissions.allGranted {
+                permissionsSetupSection
             }
-
-            Section("Modèles") {
-                LabeledContent("Statut") {
-                    Text(modelManager.isReady ? "Prêt" : "Non chargé")
-                }
-                if isReloading {
-                    ProgressView(value: modelManager.downloadProgress) {
-                        Text(modelManager.downloadStage)
-                    }
-                }
-            }
-
-            Section("Permissions") {
-                LabeledContent("Microphone", value: permissions.microphoneGranted ? "OK" : "Requis")
-                LabeledContent("Accessibilité", value: permissions.accessibilityGranted ? "OK" : "Requis")
-                LabeledContent(
-                    "Surveillance entrées",
-                    value: (permissions.inputMonitoringGranted || permissions.hotkeyOperational) ? "OK" : "Requis"
-                )
-                if permissions.restartRequired {
-                    Text("Redémarrage requis après activation de la surveillance des entrées.")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                Button("Vérifier les permissions") {
-                    permissions.refresh()
-                }
-                Button("Ouvrir les paramètres de confidentialité") {
-                    permissions.openAccessibilitySettings()
-                }
-            }
-
-            Section("Diagnostic") {
-                LabeledContent("Logs") {
-                    Text(AppLogger.logFileURL.path)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                }
-                Button("Ouvrir le dossier de logs") {
-                    AppLogger.revealInFinder()
-                }
-            }
+            permissionsSection
+            modelsSection
 
             if let errorMessage {
                 Section {
@@ -85,12 +38,183 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 420)
+        .frame(width: 420, height: 460)
         .onAppear {
             permissions.refresh()
+            modelManager.refreshModelStatuses()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             permissions.refresh()
+            modelManager.refreshModelStatuses()
+        }
+        .confirmationDialog(
+            "Supprimer ces modèles ?",
+            isPresented: Binding(
+                get: { tierPendingDeletion != nil },
+                set: { if !$0 { tierPendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Supprimer", role: .destructive) {
+                if let tier = tierPendingDeletion {
+                    deleteTier(tier)
+                }
+                tierPendingDeletion = nil
+            }
+            Button("Annuler", role: .cancel) {
+                tierPendingDeletion = nil
+            }
+        } message: {
+            if let tier = tierPendingDeletion {
+                Text("Les modèles \(tier.bundledModelsDescription) seront retirés de votre Mac.")
+            }
+        }
+    }
+
+    private var selectedTierStatus: TierInstallStatus? {
+        modelManager.tierStatuses.first { $0.tier == selectedTier }
+    }
+
+    private var isLoadingSelectedTier: Bool {
+        isReloading || modelManager.isDownloading
+    }
+
+    private var qualityStatusLabel: String? {
+        if isLoadingSelectedTier {
+            return "Téléchargement des modèles"
+        }
+        guard selectedTierStatus?.isFullyInstalled == true else { return nil }
+        if selectedTier == settingsStore.settings.tier, modelManager.isReady {
+            return "Modèles prêts"
+        }
+        if selectedTier != settingsStore.settings.tier {
+            return "Modèles prêts"
+        }
+        return nil
+    }
+
+    @ViewBuilder
+    private var permissionsSetupSection: some View {
+        Section {
+            Text("Autorisez les permissions ci-dessous pour activer la dictée vocale push-to-talk dans toutes vos apps.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var dictationSection: some View {
+        Section("Dictée") {
+            LabeledContent("Hotkey") {
+                Text("Option + Space")
+                    .foregroundStyle(.secondary)
+            }
+            LabeledContent("Qualité") {
+                HStack(spacing: 12) {
+                    Picker("", selection: $selectedTier) {
+                        ForEach(ModelTier.allCases) { tier in
+                            Text(tier.displayName).tag(tier)
+                        }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+
+                    if let qualityStatusLabel {
+                        Text(qualityStatusLabel)
+                            .font(.caption)
+                            .foregroundStyle(isLoadingSelectedTier ? .orange : .green)
+                    }
+                }
+            }
+            .onChange(of: selectedTier) { _, newValue in
+                reloadModels(for: newValue)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var modelsSection: some View {
+        Section("Modèles") {
+            ForEach(modelManager.tierStatuses) { status in
+                tierRow(status)
+            }
+            if isReloading || modelManager.isDownloading {
+                ProgressView(value: modelManager.downloadProgress) {
+                    Text(modelManager.downloadStage)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var permissionsSection: some View {
+        Section("Permissions") {
+            permissionRow(
+                title: "Microphone",
+                granted: permissions.microphoneGranted,
+                action: permissions.requestMicrophone,
+                settingsAction: permissions.openMicrophoneSettings
+            )
+            permissionRow(
+                title: "Accessibilité",
+                granted: permissions.accessibilityGranted,
+                action: permissions.requestAccessibility,
+                settingsAction: permissions.openAccessibilitySettings
+            )
+            permissionRow(
+                title: "Surveillance entrées",
+                granted: permissions.inputMonitoringGranted,
+                action: permissions.requestInputMonitoring,
+                settingsAction: permissions.openInputMonitoringSettings
+            )
+            if permissions.restartRequired {
+                Text("Redémarrage requis après activation de la surveillance des entrées.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+            Button("Vérifier les permissions") {
+                permissions.refresh()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tierRow(_ status: TierInstallStatus) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(status.tier.displayName)
+                Text(status.tier.bundledModelsDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(status.statusLabel)
+                .font(.caption)
+                .foregroundStyle(status.isFullyInstalled ? .green : (status.hasAnyInstalled ? .orange : .secondary))
+            if status.hasAnyInstalled {
+                Button("Supprimer") {
+                    tierPendingDeletion = status.tier
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func permissionRow(
+        title: String,
+        granted: Bool,
+        action: @escaping () -> Void,
+        settingsAction: @escaping () -> Void
+    ) -> some View {
+        HStack {
+            Image(systemName: granted ? "checkmark.circle.fill" : "xmark.circle")
+                .foregroundStyle(granted ? .green : .orange)
+            Text(title)
+            Spacer()
+            if !granted {
+                Button("Autoriser", action: action)
+            }
+            Button("Paramètres", action: settingsAction)
         }
     }
 
@@ -110,6 +234,14 @@ struct SettingsView: View {
                     errorMessage = error.localizedDescription
                 }
             }
+        }
+    }
+
+    private func deleteTier(_ tier: ModelTier) {
+        do {
+            try modelManager.deleteTier(tier, activeTier: settingsStore.settings.tier)
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }

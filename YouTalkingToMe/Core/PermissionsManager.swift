@@ -43,10 +43,6 @@ final class PermissionsManager: ObservableObject {
 
     func setHotkeyOperational(_ operational: Bool) {
         setIfChanged(\.hotkeyOperational, operational)
-        if operational {
-            setIfChanged(\.inputMonitoringGranted, true)
-            setIfChanged(\.restartRequired, false)
-        }
     }
 
     var allGranted: Bool {
@@ -118,10 +114,6 @@ final class PermissionsManager: ObservableObject {
     }
 
     private func checkInputMonitoringPermission() -> Bool {
-        if hotkeyOperational {
-            return true
-        }
-
         if #available(macOS 10.15, *) {
             return CGPreflightListenEventAccess()
         }
