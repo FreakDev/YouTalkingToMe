@@ -83,7 +83,7 @@ from huggingface_hub import snapshot_download
 from mlx_lm import load
 
 cache = Path.home() / 'Library/Application Support/YouTalkingToMe/models'
-path = snapshot_download('mlx-community/Qwen2.5-1.5B-Instruct-4bit', cache_dir=str(cache))
+path = snapshot_download('mlx-community/gemma-4-e2b-it-4bit', cache_dir=str(cache))
 model, tokenizer = load(path)
 assert model is not None and tokenizer is not None
 print('ok')

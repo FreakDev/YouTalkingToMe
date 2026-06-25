@@ -2,11 +2,11 @@
   "tiers": {
     "fast": {
       "stt": "mlx-community/whisper-small-mlx",
-      "polish": "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+      "polish": "mlx-community/gemma-4-e2b-it-4bit"
     },
     "quality": {
       "stt": "mlx-community/whisper-medium-mlx",
-      "polish": "mlx-community/Qwen2.5-3B-Instruct-4bit"
+      "polish": "mlx-community/gemma-4-e4b-it-4bit"
     }
   }
 }

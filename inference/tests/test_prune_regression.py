@@ -11,7 +11,7 @@ import pytest
 from conftest import models_cached
 
 BUDGET_FILE = Path(__file__).resolve().parent / "bundle_budget.json"
-POLISH_REPO = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+POLISH_REPO = "mlx-community/gemma-4-e2b-it-4bit"
 
 
 def _budget() -> dict:

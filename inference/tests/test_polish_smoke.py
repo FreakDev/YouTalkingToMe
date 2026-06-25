@@ -24,7 +24,7 @@ pytestmark = [
 @pytest.mark.smoke
 def test_polish_smoke():
     cache_dir = str(Path.home() / "Library" / "Application Support" / "YouTalkingToMe" / "models")
-    polish_path = download_model("mlx-community/Qwen2.5-1.5B-Instruct-4bit", cache_dir)
+    polish_path = download_model("mlx-community/gemma-4-e2b-it-4bit", cache_dir)
 
     engine = PolishEngine()
     engine.load(polish_path)

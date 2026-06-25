@@ -24,7 +24,7 @@ def test_transcribe_and_polish_returns_polished_text(monkeypatch, tmp_path):
     monkeypatch.setattr(server_module, "emit", capture)
 
     cache = str(Path.home() / "Library/Application Support/YouTalkingToMe/models")
-    polish_path = download_model("mlx-community/Qwen2.5-1.5B-Instruct-4bit", cache)
+    polish_path = download_model("mlx-community/gemma-4-e2b-it-4bit", cache)
 
     server = server_module.InferenceServer()
     server.polish_engine.load(polish_path)
